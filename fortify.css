@@ -66,14 +66,123 @@
         background-repeat: none;
     }
 */
+#game_play_area {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+#player_area {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+#board_container {
+    position: relative;
+    margin: 10px;
+}
 
 #board {
-    width: 524px;
-    height: 528px;
+    width: 424px;
+    height: 428px;
     background-image: url('img/board.png');
     position: relative;
     margin: auto;
     background-size: 100% 100%;
+    background-repeat: no-repeat;
 }
 
+#slots_container {
+    position: absolute;
+    top: 22px;
+    left: 15px;
+    width: 72%;
+    height: 90%;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(5, 1fr);
+}
 
+.board_slot {
+    border: 0.5px dashed #6e74df;
+    width: 100%;
+    height: 100%;
+}
+
+#units_container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.player_deck {
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+    margin: 10px 0;
+}
+
+.unit_deck {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.unit {
+    width: 80px;
+    height: 80px;
+    background-size: cover;
+    position: relative;
+}
+
+.infantry-red {
+    background-image: url('img/infantry_red.png');
+}
+
+.infantry-green {
+    background-image: url('img/infantry_green.png');
+}
+
+.battleship-red {
+    background-image: url('img/battleship_red.png');
+}
+
+.battleship-green {
+    background-image: url('img/battleship_green.png');
+}
+
+.tank-red {
+    background-image: url('img/tank_red.png');
+}
+
+.tank-green {
+    background-image: url('img/tank_green.png');
+}
+
+#reinforcement_track {
+    right: -5px;
+    position: absolute;
+    top: 20px;
+}
+
+.reinforcement_slot {
+    width: 50px;
+    height: 50px;
+    margin: 5px;
+    border: 1px solid #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 28px;
+}
+
+.heart_slot {
+    background-image: url('img/heart.png');
+    /* Example image */
+    background-size: cover;
+}

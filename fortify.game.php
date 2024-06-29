@@ -107,6 +107,38 @@ class Fortify extends Table
         $sql = "SELECT id, type, player_id, x, y FROM units";
         $result['units'] = self::getObjectListFromDB($sql);
 
+        // Initialize decks (example data)
+        $result['decks'] = array(
+            'bottom' => array(
+                'infantry' => array(
+                    array('type' => 'infantry', 'player' => 'red'),
+                    array('type' => 'infantry', 'player' => 'red')
+                ),
+                'battleship' => array(
+                    array('type' => 'battleship', 'player' => 'red'),
+                    array('type' => 'battleship', 'player' => 'red')
+                ),
+                'tank' => array(
+                    array('type' => 'tank', 'player' => 'red'),
+                    array('type' => 'tank', 'player' => 'red')
+                )
+            ),
+            'top' => array(
+                'infantry' => array(
+                    array('type' => 'infantry', 'player' => 'green'),
+                    array('type' => 'infantry', 'player' => 'green')
+                ),
+                'battleship' => array(
+                    array('type' => 'battleship', 'player' => 'green'),
+                    array('type' => 'battleship', 'player' => 'green')
+                ),
+                'tank' => array(
+                    array('type' => 'tank', 'player' => 'green'),
+                    array('type' => 'tank', 'player' => 'green')
+                )
+            )
+        );
+
         return $result;
     }
 

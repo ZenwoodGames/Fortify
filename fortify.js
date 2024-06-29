@@ -56,6 +56,9 @@ define([
                 // Initialize the game board
                 this.initBoard(gamedatas);
 
+                // Initialize player decks
+                this.initPlayerDecks(gamedatas);
+
                 // Setup game notifications to handle (see "setupNotifications" method below)
                 this.setupNotifications();
 
@@ -65,7 +68,7 @@ define([
             initBoard: function (gamedatas) {
                 debugger;
                 const unitsContainer = document.getElementById('units_container');
-                
+
                 // Ensure units is an array before using forEach
                 if (Array.isArray(gamedatas.units)) {
                     gamedatas.units.forEach(unit => {
@@ -78,6 +81,39 @@ define([
                     });
                 } else {
                     console.error("Units data is not an array:", gamedatas.units);
+                }
+            },
+
+            initPlayerDecks: function(gamedatas) {
+                // Example initialization; modify based on actual data structure
+                const playerDeckBottom = document.getElementById('player_deck_bottom');
+                const playerDeckTop = document.getElementById('player_deck_top');
+    
+                // Assuming gamedatas.decks contains arrays of units for each deck
+                const bottomDecks = {
+                    infantry: gamedatas.decks.bottom.infantry,
+                    battleship: gamedatas.decks.bottom.battleship,
+                    tank: gamedatas.decks.bottom.tank
+                };
+    
+                const topDecks = {
+                    infantry: gamedatas.decks.top.infantry,
+                    battleship: gamedatas.decks.top.battleship,
+                    tank: gamedatas.decks.top.tank
+                };
+    
+                this.populateDeck(playerDeckBottom, bottomDecks);
+                this.populateDeck(playerDeckTop, topDecks);
+            },
+
+            populateDeck: function(deckElement, decks) {
+                for (const type in decks) {
+                    const unitDeck = deckElement.querySelector(`.${type}_deck`);
+                    decks[type].forEach(unit => {
+                        const unitElement = document.createElement('div');
+                        unitElement.className = `unit ${unit.type}-${unit.player}`;
+                        unitDeck.appendChild(unitElement);
+                    });
                 }
             },
 
