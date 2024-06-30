@@ -205,6 +205,26 @@ class Fortify extends Table
     
     */
 
+    function playToken( $token_id )
+    {
+        // Check that this is the player's turn and that it is a "possible action" at this game state (see states.inc.php)
+        //$this->checkAction( 'playCard' ); 
+        
+        $player_id = $this->getActivePlayerId();
+        
+        // Add your game logic to play a card there 
+        
+        
+        // Notify all players about the card played
+        // $this->notifyAllPlayers( "cardPlayed", clienttranslate( '${player_name} plays ${card_name}' ), array(
+        //     'player_id' => $player_id,
+        //     'player_name' => $this->getActivePlayerName(),
+        //     'card_name' => $card_name,
+        //     'card_id' => $card_id
+        // ) );
+          
+    }
+
 
     //////////////////////////////////////////////////////////////////////////////
     //////////// Game state arguments

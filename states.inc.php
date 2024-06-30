@@ -49,27 +49,38 @@
 
 //    !! It is not a good idea to modify this file when a game is running !!
 
+require_once("modules/php/constants.inc.php");
  
 $machinestates = array(
 
     // The initial state. Please do not modify.
-    1 => array(
+    ST_GAME_SETUP => array(
         "name" => "gameSetup",
         "description" => "",
         "type" => "manager",
         "action" => "stGameSetup",
-        "transitions" => array( "" => 2 )
+        "transitions" => array("" => ST_PLAYER_TURN)
     ),
     
     // Note: ID=2 => your first state
 
-    2 => array(
-    		"name" => "playerTurn",
-    		"description" => clienttranslate('${actplayer} must play a card or pass'),
-    		"descriptionmyturn" => clienttranslate('${you} must play a card or pass'),
-    		"type" => "activeplayer",
-    		"possibleactions" => array( "playCard", "pass" ),
-    		"transitions" => array( "playCard" => 2, "pass" => 2 )
+    // Player's turn
+    ST_PLAYER_TURN => array(
+        "name" => "playerTurn",
+        "description" => clienttranslate('${actplayer} must take two Actions, or Pass'),
+        "descriptionmyturn" => clienttranslate('${you} must take two Actions, or Pass'),
+        "type" => "activeplayer",
+        "possibleactions" => array("enlist", "move", "fortify", "attack", "pass"),
+        "transitions" => array("next" => ST_NEXT_PLAYER, "pass" => ST_NEXT_PLAYER)
+    ),
+    
+    // Next player
+    ST_NEXT_PLAYER => array(
+        'name' => 'nextPlayer',
+        'description' => '',
+        'type' => 'game',
+        'action' => 'stNextPlayer',
+        'transitions' => array('' => ST_PLAYER_TURN)
     ),
     
 /*
