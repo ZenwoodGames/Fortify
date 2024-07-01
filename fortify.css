@@ -176,27 +176,27 @@
     padding: 5px 10px;
 }
 
-.infantry-red {
+.infantry.red {
     background-image: url('img/infantry_red.png');
 }
 
-.infantry-green {
+.infantry.green {
     background-image: url('img/infantry_green.png');
 }
 
-.battleship-red {
+.battleship.red {
     background-image: url('img/battleship_red.png');
 }
 
-.battleship-green {
+.battleship.green {
     background-image: url('img/battleship_green.png');
 }
 
-.tank-red {
+.tank.red {
     background-image: url('img/tank_red.png');
 }
 
-.tank-green {
+.tank.green {
     background-image: url('img/tank_green.png');
 }
 

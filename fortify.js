@@ -72,6 +72,13 @@ define([
 
             handleUnitClick: function (event) {
                 debugger;
+                switch (event.target.classList[1]) {
+                    case 'battleship':
+                        const waterSlot = document.querySelectorAll('.water');
+                        waterSlot.forEach(slot => {
+                            slot.classList.add('highlighted');
+                        });
+                }
                 //if (gameState !== 'enlist') return;
 
                 // Deselect previously selected token
@@ -144,7 +151,7 @@ define([
                     const unitDeck = deckElement.querySelector(`.${type}_deck`);
                     decks[type].forEach(unit => {
                         const unitElement = document.createElement('div');
-                        unitElement.className = `unit ${unit.type}-${unit.player}`;
+                        unitElement.className = `unit ${unit.type} ${unit.player}`;
                         unitDeck.appendChild(unitElement);
                     });
                 }

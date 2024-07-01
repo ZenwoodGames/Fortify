@@ -43,30 +43,30 @@
             <div id="board">
                 <div id="slots_container">
                     <!-- Board slots for placing units -->
-                    <div class="board_slot" data-x="0" data-y="0"></div>
-                    <div class="board_slot" data-x="1" data-y="0"></div>
-                    <div class="board_slot" data-x="2" data-y="0"></div>
+                    <div class="board_slot water" data-x="0" data-y="0"></div>
+                    <div class="board_slot water" data-x="1" data-y="0"></div>
+                    <div class="board_slot water" data-x="2" data-y="0"></div>
                     <div class="board_slot shore" data-x="3" data-y="0"></div>
 
-                    <div class="board_slot" data-x="0" data-y="1"></div>
-                    <div class="board_slot" data-x="1" data-y="1"></div>
+                    <div class="board_slot water" data-x="0" data-y="1"></div>
+                    <div class="board_slot water" data-x="1" data-y="1"></div>
                     <div class="board_slot shore" data-x="2" data-y="1"></div>
-                    <div class="board_slot" data-x="3" data-y="1"></div>
+                    <div class="board_slot land" data-x="3" data-y="1"></div>
 
-                    <div class="board_slot" data-x="0" data-y="2"></div>
+                    <div class="board_slot water" data-x="0" data-y="2"></div>
                     <div class="board_slot shore" data-x="1" data-y="2"></div>
-                    <div class="board_slot" data-x="2" data-y="2"></div>
-                    <div class="board_slot" data-x="3" data-y="2"></div>
+                    <div class="board_slot land" data-x="2" data-y="2"></div>
+                    <div class="board_slot land" data-x="3" data-y="2"></div>
 
                     <div class="board_slot shore" data-x="0" data-y="3"></div>
-                    <div class="board_slot" data-x="1" data-y="3"></div>
-                    <div class="board_slot" data-x="2" data-y="3"></div>
-                    <div class="board_slot" data-x="3" data-y="3"></div>
+                    <div class="board_slot land" data-x="1" data-y="3"></div>
+                    <div class="board_slot land" data-x="2" data-y="3"></div>
+                    <div class="board_slot land" data-x="3" data-y="3"></div>
 
-                    <div class="board_slot" data-x="0" data-y="4"></div>
-                    <div class="board_slot" data-x="1" data-y="4"></div>
-                    <div class="board_slot" data-x="2" data-y="4"></div>
-                    <div class="board_slot" data-x="3" data-y="4"></div>
+                    <div class="board_slot land" data-x="0" data-y="4"></div>
+                    <div class="board_slot land" data-x="1" data-y="4"></div>
+                    <div class="board_slot land" data-x="2" data-y="4"></div>
+                    <div class="board_slot land" data-x="3" data-y="4"></div>
                 </div>
                 <div id="reinforcement_track">
                     <!-- Reinforcement track slots -->
