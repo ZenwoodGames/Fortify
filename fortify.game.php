@@ -58,17 +58,23 @@ class Fortify extends Table
     */
     function setupNewGame($players, $options = array())
     {
+        // Define colors
+        $colors = array("red", "green");  // Red, Green
+
         // Initialize players
-        $sql = "INSERT INTO player (player_id, player_name, player_color) VALUES ";
+        $sql = "INSERT INTO player (player_id, player_color, player_canal, player_name, player_avatar) VALUES ";
         $values = array();
+        $i = 0;
         foreach ($players as $player_id => $player) {
-            $values[] = "('" . $player_id . "','" . $player['player_name'] . "','000000')";
+            $color = $colors[$i];  // Assign red to first player, green to second
+            $canal = $player['player_canal'];
+            $name = addslashes($player['player_name']);
+            $avatar = addslashes($player['player_avatar']);
+            $values[] = "('$player_id','$color','$canal','$name','$avatar')";
+            $i++;
         }
         $sql .= implode(',', $values);
         self::DbQuery($sql);
-        self::reloadPlayersBasicInfos();
-
-        // Setup initial game state here
 
         // Example: Initialize units
         $units = array(
@@ -217,16 +223,16 @@ class Fortify extends Table
     
     */
 
-    function playToken( $token_id )
+    function playToken($token_id)
     {
         // Check that this is the player's turn and that it is a "possible action" at this game state (see states.inc.php)
         //$this->checkAction( 'playCard' ); 
-        
+
         $player_id = $this->getActivePlayerId();
-        
+
         // Add your game logic to play a card there 
-        
-        
+
+
         // Notify all players about the card played
         // $this->notifyAllPlayers( "cardPlayed", clienttranslate( '${player_name} plays ${card_name}' ), array(
         //     'player_id' => $player_id,
@@ -234,7 +240,7 @@ class Fortify extends Table
         //     'card_name' => $card_name,
         //     'card_id' => $card_id
         // ) );
-          
+
     }
 
 

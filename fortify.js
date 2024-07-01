@@ -24,10 +24,8 @@ define([
         return declare("bgagame.fortify", ebg.core.gamegui, {
             constructor: function () {
                 console.log('fortify constructor');
+                let selectedUnit = null;
 
-                // Here, you can init the global variables of your user interface
-                // Example:
-                // this.myGlobalValue = 0;
 
             },
 
@@ -45,6 +43,7 @@ define([
             */
 
             setup: function (gamedatas) {
+                debugger;
                 console.log("Starting game setup");
 
                 // Setting up player boards
@@ -62,7 +61,41 @@ define([
                 // Setup game notifications to handle (see "setupNotifications" method below)
                 this.setupNotifications();
 
+                // Add event listeners to the units
+                const units = document.querySelectorAll('.unit');
+                units.forEach(unit => {
+                    unit.addEventListener('click', this.handleUnitClick);
+                });
+
                 console.log("Ending game setup");
+            },
+
+            handleUnitClick: function (event) {
+                debugger;
+                //if (gameState !== 'enlist') return;
+
+                // Deselect previously selected token
+                this.selectedUnit = document.querySelectorAll('.selected');
+                if (this.selectedUnit && this.selectedUnit.length > 0) {
+                    this.selectedUnit.forEach(sUnit => {
+                        sUnit.classList.remove('selected');
+                    });
+                }
+                const highlightesShoreSpaces = document.querySelectorAll('.highlighted');
+                if (this.highlightesShoreSpaces && this.highlightesShoreSpaces.length > 0) {
+                    this.highlightesShoreSpaces.forEach(highlightesShoreSpace => {
+                        highlightesShoreSpace.classList.remove('highlighted');
+                    });
+                }
+                // Select the clicked Unit
+                this.selectedUnit = event.target;
+                this.selectedUnit.classList.add('selected');
+
+                // Highlight shore spaces
+                const shoreSpaces = document.querySelectorAll('.shore');
+                shoreSpaces.forEach(space => {
+                    space.classList.add('highlighted');
+                });
             },
 
             initBoard: function (gamedatas) {
@@ -84,29 +117,29 @@ define([
                 }
             },
 
-            initPlayerDecks: function(gamedatas) {
+            initPlayerDecks: function (gamedatas) {
                 // Example initialization; modify based on actual data structure
                 const playerDeckBottom = document.getElementById('player_deck_bottom');
                 const playerDeckTop = document.getElementById('player_deck_top');
-    
+
                 // Assuming gamedatas.decks contains arrays of units for each deck
                 const bottomDecks = {
                     infantry: gamedatas.decks.bottom.infantry,
                     battleship: gamedatas.decks.bottom.battleship,
                     tank: gamedatas.decks.bottom.tank
                 };
-    
+
                 const topDecks = {
                     infantry: gamedatas.decks.top.infantry,
                     battleship: gamedatas.decks.top.battleship,
                     tank: gamedatas.decks.top.tank
                 };
-    
+
                 this.populateDeck(playerDeckBottom, bottomDecks);
                 this.populateDeck(playerDeckTop, topDecks);
             },
 
-            populateDeck: function(deckElement, decks) {
+            populateDeck: function (deckElement, decks) {
                 for (const type in decks) {
                     const unitDeck = deckElement.querySelector(`.${type}_deck`);
                     decks[type].forEach(unit => {
@@ -125,20 +158,10 @@ define([
             //
             onEnteringState: function (stateName, args) {
                 console.log('Entering state: ' + stateName);
-
+                debugger;
                 switch (stateName) {
-
-                    /* Example:
-                    
-                    case 'myGameState':
-                    
-                        // Show some HTML block at this game state
-                        dojo.style( 'my_html_block_id', 'display', 'block' );
-                        
+                    case 'enlist':
                         break;
-                   */
-
-
                     case 'dummmy':
                         break;
                 }

@@ -156,6 +156,17 @@
     margin: 0 -43px;
 }
 
+.selected{
+    border-style: double;
+    border-radius: 43px;
+    padding: 2px;
+}
+
+.highlighted{
+    background-color: yellow;
+    opacity: 0.3;
+}
+
 .action-menu {
     display: flex;
     flex-direction: row;
