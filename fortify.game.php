@@ -112,13 +112,19 @@ class Fortify extends Table
             'bottom' => array(
                 'infantry' => array(
                     array('type' => 'infantry', 'player' => 'red'),
+                    array('type' => 'infantry', 'player' => 'red'),
+                    array('type' => 'infantry', 'player' => 'red'),
                     array('type' => 'infantry', 'player' => 'red')
                 ),
                 'battleship' => array(
                     array('type' => 'battleship', 'player' => 'red'),
+                    array('type' => 'battleship', 'player' => 'red'),
+                    array('type' => 'battleship', 'player' => 'red'),
                     array('type' => 'battleship', 'player' => 'red')
                 ),
                 'tank' => array(
+                    array('type' => 'tank', 'player' => 'red'),
+                    array('type' => 'tank', 'player' => 'red'),
                     array('type' => 'tank', 'player' => 'red'),
                     array('type' => 'tank', 'player' => 'red')
                 )
@@ -126,13 +132,19 @@ class Fortify extends Table
             'top' => array(
                 'infantry' => array(
                     array('type' => 'infantry', 'player' => 'green'),
+                    array('type' => 'infantry', 'player' => 'green'),
+                    array('type' => 'infantry', 'player' => 'green'),
                     array('type' => 'infantry', 'player' => 'green')
                 ),
                 'battleship' => array(
                     array('type' => 'battleship', 'player' => 'green'),
+                    array('type' => 'battleship', 'player' => 'green'),
+                    array('type' => 'battleship', 'player' => 'green'),
                     array('type' => 'battleship', 'player' => 'green')
                 ),
                 'tank' => array(
+                    array('type' => 'tank', 'player' => 'green'),
+                    array('type' => 'tank', 'player' => 'green'),
                     array('type' => 'tank', 'player' => 'green'),
                     array('type' => 'tank', 'player' => 'green')
                 )
