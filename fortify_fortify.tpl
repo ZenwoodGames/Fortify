@@ -34,6 +34,12 @@
             <div class="unit_deck tank_deck"></div>
         </div>
         <div id="board_container">
+        <div class="action-menu">
+                <button class="action-button">MOVE</button>
+                <button class="action-button">ATTACK</button>
+                <button class="action-button">FORTIFY</button>
+                <button class="action-button">ENLIST</button>
+            </div>
             <div id="board">
                 <div id="slots_container">
                     <!-- Board slots for placing units -->
