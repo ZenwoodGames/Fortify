@@ -63,9 +63,9 @@ $machinestates = array(
     ),
     // Player must enlist in first turn
     ST_PLAYER_F_TURN => array(
-        "name" => "playerTurn",
-        "description" => clienttranslate('${actplayer} must enlist a unit on a shore space'),
-        "descriptionmyturn" => clienttranslate('${you} must enlist a unit on a shore space'),
+        "name" => "playerFirstTurn",
+        "description" => clienttranslate('${actplayer} must enlist a unit'),
+        "descriptionmyturn" => clienttranslate('${you} must enlist a unit'),
         "type" => "activeplayer",
         "possibleactions" => array("enlist", "pass"),
         "transitions" => array("next" => ST_NEXT_PLAYER, "pass" => ST_NEXT_PLAYER)

@@ -148,12 +148,12 @@
 }
 
 .unit {
-    width: 80px;
-    height: 80px;
+    width: 68px;
+    height: 68px;
     background-size: cover;
     position: relative;
     filter: drop-shadow(4px 4px 2px #222);
-    margin: 0 -43px;
+    margin: 0 -36px;
 }
 
 .selected{
@@ -171,9 +171,19 @@
     display: flex;
     flex-direction: row;
 }
+
 .action-button {
     margin: 5px 0;
     padding: 5px 10px;
+    cursor: pointer;
+}
+
+.margin-0 {
+    margin: 0;
+}
+
+.btn-active {
+    background-color: #9cdf9c;
 }
 
 .infantry.red {

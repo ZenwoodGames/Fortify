@@ -60,14 +60,51 @@ define([
 
                 // Setup game notifications to handle (see "setupNotifications" method below)
                 this.setupNotifications();
-
+                debugger;
                 // Add event listeners to the units
-                const units = document.querySelectorAll('.unit');
-                units.forEach(unit => {
-                    unit.addEventListener('click', this.handleUnitClick);
-                });
+                dojo.query('.unit').connect('onclick', this, dojo.hitch(this, 'handleUnitClick'));
+
+                // const units = document.querySelectorAll('.unit');
+                // units.forEach(unit => {
+                //     unit.addEventListener('click', this.handleUnitClick);
+                // });
+
+                // Add event listener for slots
+                dojo.query('.board-slot').connect('onclick', this, dojo.hitch(this, 'handleSlotClick'));
+
+
+                this.addEventListenserForActionButtons(gamedatas.gamestate.possibleactions);
 
                 console.log("Ending game setup");
+            },
+
+            handleSlotClick: function (event) {
+                debugger;
+                this.removeSlotHighlight();
+                this.selectedUnit.classList.remove("selected");
+                this.selectedUnit.style = "margin: 2px 0 0 7px;"
+                event.target.appendChild(this.selectedUnit);
+            },
+            removeSlotHighlight: function () {
+                debugger;
+                const highlightedSlots = document.querySelectorAll('.highlighted');
+                highlightedSlots.forEach(slot => {
+                    slot.classList.remove('highlighted');
+                });
+            },
+
+            addEventListenserForActionButtons: function (possibleActions) {
+                if (possibleActions.indexOf('enlist') == 0)
+                    dojo.query('#btnEnlist').connect('onclick', this, dojo.hitch(this, 'enlist'));
+
+                if (possibleActions.indexOf('fortify') == 0)
+                    dojo.query('#btnFortify').connect('onclick', this, dojo.hitch(this, 'fortify'));
+
+                if (possibleActions.indexOf('attack') == 0)
+                    dojo.query('#btnAttack').connect('onclick', this, dojo.hitch(this, 'attack'));
+
+                if (possibleActions.indexOf('move') == 0)
+                    dojo.query('#btnMove').connect('onclick', this, dojo.hitch(this, 'move'));
             },
 
             handleUnitClick: function (event) {
@@ -78,6 +115,15 @@ define([
                         waterSlot.forEach(slot => {
                             slot.classList.add('highlighted');
                         });
+                        this.selectedUnit = event.target.id;
+                        break;
+                    case 'infantry':
+                        const landSlot = document.querySelectorAll('.land');
+                        landSlot.forEach(slot => {
+                            slot.classList.add('highlighted');
+                        });
+                        this.selectedUnit = event.target.id;
+                        break;
                 }
                 //if (gameState !== 'enlist') return;
 
@@ -106,22 +152,21 @@ define([
             },
 
             initBoard: function (gamedatas) {
-                debugger;
-                const unitsContainer = document.getElementById('units_container');
+                // const unitsContainer = document.getElementById('units_container');
 
-                // Ensure units is an array before using forEach
-                if (Array.isArray(gamedatas.units)) {
-                    gamedatas.units.forEach(unit => {
-                        const unitElement = document.createElement('div');
-                        unitElement.id = unit.id;
-                        unitElement.className = `unit ${unit.type} ${unit.player}`;
-                        unitElement.style.top = `${unit.y * 100}px`;
-                        unitElement.style.left = `${unit.x * 100}px`;
-                        unitsContainer.appendChild(unitElement);
-                    });
-                } else {
-                    console.error("Units data is not an array:", gamedatas.units);
-                }
+                // // Ensure units is an array before using forEach
+                // if (Array.isArray(gamedatas.units)) {
+                //     gamedatas.units.forEach(unit => {
+                //         const unitElement = document.createElement('div');
+                //         unitElement.id = unit.id;
+                //         unitElement.className = `unit ${unit.type} ${unit.player}`;
+                //         unitElement.style.top = `${unit.y * 100}px`;
+                //         unitElement.style.left = `${unit.x * 100}px`;
+                //         unitsContainer.appendChild(unitElement);
+                //     });
+                // } else {
+                //     console.error("Units data is not an array:", gamedatas.units);
+                // }
             },
 
             initPlayerDecks: function (gamedatas) {
@@ -149,8 +194,10 @@ define([
             populateDeck: function (deckElement, decks) {
                 for (const type in decks) {
                     const unitDeck = deckElement.querySelector(`.${type}_deck`);
-                    decks[type].forEach(unit => {
+                    decks[type].forEach(function (unit, i) {
+                        debugger;
                         const unitElement = document.createElement('div');
+                        unitElement.id = `${unit.type}_${unit.player}_00${i}`
                         unitElement.className = `unit ${unit.type} ${unit.player}`;
                         unitDeck.appendChild(unitElement);
                     });
@@ -165,8 +212,10 @@ define([
             //
             onEnteringState: function (stateName, args) {
                 console.log('Entering state: ' + stateName);
-                debugger;
                 switch (stateName) {
+                    case 'playerFirstTurn':
+                        this.enlist()
+                        break;
                     case 'enlist':
                         break;
                     case 'dummmy':
@@ -246,7 +295,35 @@ define([
                 _ make a call to the game server
             
             */
+            enlist: function () {
+                debugger;
+                // Remove existing highlight
+                this.removeButtonHighlight();
 
+                let btnEnlist = document.getElementById("btnEnlist");
+                btnEnlist.classList.add("btn-active");
+            },
+            fortify: function (event) {
+                debugger;
+                this.removeButtonHighlight();
+
+                event.currentTarget.classList.add("btn-active");
+            },
+            move: function (event) {
+
+            },
+            attack: function (event) {
+
+            },
+            removeButtonHighlight: function () {
+                let allActionButtons = document.querySelectorAll(".btn-active");
+                debugger;
+                if (allActionButtons && allActionButtons.length > 0) {
+                    allActionButtons.forEach(actionButtons => {
+                        actionButtons.classList.remove("btn-active");
+                    });
+                }
+            },
             /* Example:
             
             onMyMethodToCall1: function( evt )
