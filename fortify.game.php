@@ -76,18 +76,31 @@ class Fortify extends Table
         $sql .= implode(',', $values);
         self::DbQuery($sql);
 
-        // Example: Initialize units
-        $units = array(
-            array('type' => 'infantry', 'player_id' => 1, 'x' => 0, 'y' => 0),
-            array('type' => 'tank', 'player_id' => 1, 'x' => 1, 'y' => 1),
-            // Add more initial units as needed
-        );
+        // $units = array(
+        //     array('type' => 'infantry', 'player_id' => 1, 'x' => 0, 'y' => 0),
+        //     array('type' => 'tank', 'player_id' => 1, 'x' => 1, 'y' => 0),
+        //     array('type' => 'battleship', 'player_id' => 1, 'x' => 2, 'y' => 0),
+        //     array('type' => 'infantry', 'player_id' => 2, 'x' => 0, 'y' => 4),
+        //     array('type' => 'tank', 'player_id' => 2, 'x' => 1, 'y' => 4),
+        //     array('type' => 'battleship', 'player_id' => 2, 'x' => 2, 'y' => 4),
+        // );
 
-        foreach ($units as $unit) {
-            $this->DbQuery("INSERT INTO units (type, player_id, x, y) VALUES ('" . $unit['type'] . "', " . $unit['player_id'] . ", " . $unit['x'] . ", " . $unit['y'] . ")");
-        }
+        // foreach ($units as $unit) {
+        //     $this->DbQuery("INSERT INTO units (type, player_id, x, y) VALUES ('" . $unit['type'] . "', " . $unit['player_id'] . ", " . $unit['x'] . ", " . $unit['y'] . ")");
+        // }
 
         $this->activeNextPlayer();
+
+        // Get the ID of the first player (assuming you want the first registered player to go first)
+        $first_player_id = array_keys($players)[0];
+
+        // Explicitly set the first player as active
+        $this->gamestate->changeActivePlayer($first_player_id);
+
+        // Go to the first player's turn
+        //$this->gamestate->nextState(ST_PLAYER_F_TURN);
+        // Go to the first player's turn
+        //$this->gamestate->nextState(ST_PLAYER_F_TURN);
 
         /************ End of the game initialization *****/
     }
@@ -177,6 +190,28 @@ class Fortify extends Table
         return 0;
     }
 
+    function stNextPlayer()
+    {
+        // Active next player
+        $player_id = self::activeNextPlayer();
+        self::giveExtraTime($player_id);
+
+        // Log the active player
+        self::info("Active player set to: " . $player_id);
+
+        // Determine if this is the first turn
+        $sql = "SELECT COUNT(*) FROM units";
+        $unitCount = self::getUniqueValueFromDB($sql);
+
+        if ($unitCount == 0) {
+            // If no units have been placed, it's still the first turn
+            $this->gamestate->nextState("firstTurn");
+        } else {
+            // Otherwise, go to the regular player turn
+            $this->gamestate->nextState("");
+        }
+    }
+
 
     //////////////////////////////////////////////////////////////////////////////
     //////////// Utility functions
@@ -241,6 +276,73 @@ class Fortify extends Table
         //     'card_id' => $card_id
         // ) );
 
+    }
+
+    function enlist($unitType, $x, $y)
+    {
+        // Check if it's a valid action
+        if (!$this->checkAction('enlist')) {
+            throw new BgaUserException(self::_("It is not your turn or this action is not allowed at this time"));
+        }
+
+        // Get the current player id
+        $player_id = self::getActivePlayerId();
+
+        // Check if it's really this player's turn
+        $current_player_id = self::getCurrentPlayerId();
+        if ($player_id != $current_player_id) {
+            throw new BgaUserException(self::_("It's not your turn"));
+        }
+
+        // Validate the unit type
+        $validUnitTypes = ['infantry', 'tank', 'battleship'];
+        if (!in_array($unitType, $validUnitTypes)) {
+            throw new BgaUserException(self::_("Invalid unit type"));
+        }
+
+        // Validate the coordinates
+        if ($x < 0 || $x > 3 || $y < 0 || $y > 4) {
+            throw new BgaUserException(self::_("Invalid coordinates"));
+        }
+
+        // Check if the space is empty
+        $sql = "SELECT COUNT(*) FROM units WHERE x = $x AND y = $y";
+        $count = self::getUniqueValueFromDB($sql);
+        if ($count > 0) {
+            throw new BgaUserException(self::_("This space is already occupied"));
+        }
+
+        // Check if the player has available units of this type
+        $sql = "SELECT COUNT(*) FROM units WHERE player_id = $player_id AND type = '$unitType'";
+        $count = self::getUniqueValueFromDB($sql);
+        if ($count >= 4) {
+            throw new BgaUserException(self::_("You have no more units of this type available"));
+        }
+
+        // Add the unit to the board
+        $sql = "INSERT INTO units (type, player_id, x, y) VALUES ('$unitType', $player_id, $x, $y)";
+        self::DbQuery($sql);
+
+        // Notify all players about the new unit
+        self::notifyAllPlayers('unitEnlisted', clienttranslate('${player_name} enlists a ${unit_type} at (${x},${y})'), [
+            'player_id' => $player_id,
+            'player_name' => self::getActivePlayerName(),
+            'unit_type' => $unitType,
+            'x' => $x,
+            'y' => $y
+        ]);
+
+        // Move to the next player
+        // $this->gamestate->nextState('next');
+    }
+
+    public function endTurn()
+    {
+        self::checkAction('endTurn');
+
+        // Any end-of-turn logic here
+
+        $this->gamestate->nextState('next');
     }
 
 

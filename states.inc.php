@@ -1,4 +1,5 @@
 <?php
+
 /**
  *------
  * BGA framework: Gregory Isabelli & Emmanuel Colin & BoardGameArena
@@ -50,7 +51,7 @@
 //    !! It is not a good idea to modify this file when a game is running !!
 
 require_once("modules/php/constants.inc.php");
- 
+
 $machinestates = array(
 
     // The initial state. Please do not modify.
@@ -67,8 +68,8 @@ $machinestates = array(
         "description" => clienttranslate('${actplayer} must enlist a unit'),
         "descriptionmyturn" => clienttranslate('${you} must enlist a unit'),
         "type" => "activeplayer",
-        "possibleactions" => array("enlist", "pass"),
-        "transitions" => array("next" => ST_NEXT_PLAYER, "pass" => ST_NEXT_PLAYER)
+        "possibleactions" => array("enlist"),
+        "transitions" => array("next" => ST_NEXT_PLAYER)
     ),
 
     // Player's turn
@@ -78,19 +79,22 @@ $machinestates = array(
         "descriptionmyturn" => clienttranslate('${you} must take two Actions, or Pass'),
         "type" => "activeplayer",
         "possibleactions" => array("enlist", "move", "fortify", "attack", "pass"),
-        "transitions" => array("next" => ST_NEXT_PLAYER, "pass" => ST_NEXT_PLAYER)
+        "transitions" => array("next" => ST_NEXT_PLAYER)
     ),
-    
+
     // Next player
     ST_NEXT_PLAYER => array(
         'name' => 'nextPlayer',
         'description' => '',
         'type' => 'game',
         'action' => 'stNextPlayer',
-        'transitions' => array('' => ST_PLAYER_TURN)
+        "transitions" => array(
+            "" => ST_PLAYER_TURN,
+            "firstTurn" => ST_PLAYER_F_TURN
+        )
     ),
-    
-/*
+
+    /*
     Examples:
     
     2 => array(
@@ -111,8 +115,8 @@ $machinestates = array(
         "transitions" => array( "playCard" => 2, "pass" => 2 )
     ), 
 
-*/    
-   
+*/
+
     // Final state.
     // Please do not modify (and do not overload action/args methods).
     99 => array(
@@ -124,6 +128,3 @@ $machinestates = array(
     )
 
 );
-
-
-

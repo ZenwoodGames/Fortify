@@ -1,4 +1,5 @@
 <?php
+
 /**
  *------
  * BGA framework: Gregory Isabelli & Emmanuel Colin & BoardGameArena
@@ -20,29 +21,26 @@
  * this.ajaxcall( "/fortify/fortify/myAction.html", ...)
  *
  */
-  
-  
-  class action_fortify extends APP_GameAction
-  { 
-    // Constructor: please do not modify
-   	public function __default()
-  	{
-  	    if( $this->isArg( 'notifwindow') )
-  	    {
-            $this->view = "common_notifwindow";
-  	        $this->viewArgs['table'] = $this->getArg( "table", AT_posint, true );
-  	    }
-  	    else
-  	    {
-            $this->view = "fortify_fortify";
-            $this->trace( "Complete reinitialization of board game" );
-      }
-  	} 
-  	
-  	// TODO: defines your action entry points there
 
 
-    /*
+class action_fortify extends APP_GameAction
+{
+  // Constructor: please do not modify
+  public function __default()
+  {
+    if ($this->isArg('notifwindow')) {
+      $this->view = "common_notifwindow";
+      $this->viewArgs['table'] = $this->getArg("table", AT_posint, true);
+    } else {
+      $this->view = "fortify_fortify";
+      $this->trace("Complete reinitialization of board game");
+    }
+  }
+
+  // TODO: defines your action entry points there
+
+
+  /*
     
     Example:
   	
@@ -63,6 +61,25 @@
     
     */
 
-  }
-  
+  public function enlist()
+  {
+    self::setAjaxMode();
 
+    // Retrieve arguments
+    $unitType = self::getArg("unitType", AT_alphanum, true);
+    $x = self::getArg("x", AT_int, true);
+    $y = self::getArg("y", AT_int, true);
+
+    // Call the enlist method on the game instance
+    $this->game->enlist($unitType, $x, $y);
+
+    self::ajaxResponse();
+  }
+
+  public function endTurn()
+  {
+    self::setAjaxMode();
+    $result = $this->game->endTurn();
+    self::ajaxResponse();
+  }
+}

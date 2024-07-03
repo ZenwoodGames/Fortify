@@ -79,8 +79,10 @@ define([
             },
 
             handleSlotClick: function (event) {
-                debugger;
                 this.removeSlotHighlight();
+
+                this.finishEnlist(this.selectedUnit.classList[1], event.target.dataset.x, event.target.dataset.y);
+
                 this.selectedUnit.classList.remove("selected");
                 this.selectedUnit.style = "margin: 2px 0 0 7px;"
                 event.target.appendChild(this.selectedUnit);
@@ -302,6 +304,24 @@ define([
 
                 let btnEnlist = document.getElementById("btnEnlist");
                 btnEnlist.classList.add("btn-active");
+            },
+            finishEnlist: function(unitType, x, y){
+                debugger;
+                if (this.checkAction('enlist')) {
+                    this.ajaxcall("/fortify/fortify/enlist.html", {
+                        unitType: unitType,
+                        x: x,
+                        y: y,
+                        lock: true
+                    }, this, function(result) {
+                        debugger;
+                        // What to do after the server call if it succeeded
+                        // (most of the time: nothing)
+                    }, function (is_error) {
+                        debugger;
+                        // What to do after the server call in any case
+                    });
+                }
             },
             fortify: function (event) {
                 debugger;
