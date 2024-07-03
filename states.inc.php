@@ -69,7 +69,10 @@ $machinestates = array(
         "descriptionmyturn" => clienttranslate('${you} must enlist a unit'),
         "type" => "activeplayer",
         "possibleactions" => array("enlist"),
-        "transitions" => array("next" => ST_NEXT_PLAYER)
+        "transitions" => array(
+            "nextPlayerFirstTurn" => ST_NEXT_PLAYER,
+            "endFirstTurns" => ST_NEXT_PLAYER
+        )
     ),
 
     // Player's turn
@@ -89,8 +92,8 @@ $machinestates = array(
         'type' => 'game',
         'action' => 'stNextPlayer',
         "transitions" => array(
-            "" => ST_PLAYER_TURN,
-            "firstTurn" => ST_PLAYER_F_TURN
+            "firstTurn" => ST_PLAYER_F_TURN,
+            "playerTurn" => ST_PLAYER_TURN
         )
     ),
 

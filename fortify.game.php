@@ -192,23 +192,20 @@ class Fortify extends Table
 
     function stNextPlayer()
     {
-        // Active next player
-        $player_id = self::activeNextPlayer();
+        // Activate next player
+        $player_id = $this->activeNextPlayer();
         self::giveExtraTime($player_id);
 
-        // Log the active player
-        self::info("Active player set to: " . $player_id);
-
-        // Determine if this is the first turn
+        // Check if we're still in first turns
         $sql = "SELECT COUNT(*) FROM units";
         $unitCount = self::getUniqueValueFromDB($sql);
 
-        if ($unitCount == 0) {
-            // If no units have been placed, it's still the first turn
-            $this->gamestate->nextState("firstTurn");
+        if ($unitCount < count($this->loadPlayersBasicInfos())) {
+            // If not all players have placed their first unit, go to first turn state
+            $this->gamestate->nextState('firstTurn');
         } else {
             // Otherwise, go to the regular player turn
-            $this->gamestate->nextState("");
+            $this->gamestate->nextState('playerTurn');
         }
     }
 
@@ -333,8 +330,17 @@ class Fortify extends Table
             'unitId' => $unitId
         ]);
 
-        // Move to the next player
-        // $this->gamestate->nextState('next');
+        // Check if this was the first turn
+        $sql = "SELECT COUNT(*) FROM units";
+        $unitCount = self::getUniqueValueFromDB($sql);
+
+        if ($unitCount == count($this->loadPlayersBasicInfos())) {
+            // If all players have placed their first unit, move to regular turns
+            $this->gamestate->nextState('endFirstTurns');
+        } else {
+            // Otherwise, move to the next player's first turn
+            $this->gamestate->nextState('nextPlayerFirstTurn');
+        }
     }
 
     public function endTurn()
