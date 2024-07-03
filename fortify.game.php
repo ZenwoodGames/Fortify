@@ -320,6 +320,10 @@ class Fortify extends Table
         $sql = "INSERT INTO units (type, player_id, x, y, unit_id) VALUES ('$unitType', $player_id, $x, $y, '$unitId')";
         self::DbQuery($sql);
 
+        // Get the player's color
+        $players = self::loadPlayersBasicInfos();
+        $player_color = $players[$player_id]['player_color'];
+
         // Notify all players about the new unit
         self::notifyAllPlayers('unitEnlisted', clienttranslate('${player_name} enlists a ${unit_type} at (${x},${y})'), [
             'player_id' => $player_id,
@@ -327,7 +331,8 @@ class Fortify extends Table
             'unit_type' => $unitType,
             'x' => $x,
             'y' => $y,
-            'unitId' => $unitId
+            'unitId' => $unitId,
+            'player_color' => $player_color
         ]);
 
         // Check if this was the first turn

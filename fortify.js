@@ -439,34 +439,49 @@ define([
             setupNotifications: function () {
                 console.log('notifications subscriptions setup');
 
-                // TODO: here, associate your game notifications with local methods
-
-                // Example 1: standard notification handling
-                // dojo.subscribe( 'cardPlayed', this, "notif_cardPlayed" );
-
-                // Example 2: standard notification handling + tell the user interface to wait
-                //            during 3 seconds after calling the method in order to let the players
-                //            see what is happening in the game.
-                // dojo.subscribe( 'cardPlayed', this, "notif_cardPlayed" );
-                // this.notifqueue.setSynchronous( 'cardPlayed', 3000 );
-                // 
+                dojo.subscribe('unitEnlisted', this, "notif_unitEnlisted");
             },
 
-            // TODO: from this point and below, you can write your game notifications handling methods
-
-            /*
-            Example:
+            notif_unitEnlisted: function(notif) {
+                console.log('Notification received: unitEnlisted', notif);
             
-            notif_cardPlayed: function( notif )
-            {
-                console.log( 'notif_cardPlayed' );
-                console.log( notif );
-                
-                // Note: notif.args contains the arguments specified during you "notifyAllPlayers" / "notifyPlayer" PHP call
-                
-                // TODO: play the card in the user interface.
-            },    
+                // Create or move the unit on the board
+                var unitId = notif.args.unitId;
+                var unitType = notif.args.unit_type;
+                var x = notif.args.x;
+                var y = notif.args.y;
+                var playerColor = notif.args.player_color;
             
-            */
+                // Check if the unit already exists (it might for the player who made the move)
+                var unitDiv = $(unitId);
+                if (!unitDiv) {
+                    // If it doesn't exist, create it
+                    unitDiv = this.createUnitDiv(unitId, unitType, playerColor);
+                }
+            
+                // Move the unit to the correct position on the board
+                var slot = $('board_slot_' + x + '_' + y);
+                if (slot) {
+                    slot.appendChild(unitDiv);
+                    unitDiv.style.margin = "2px 0 0 7px";
+                }
+            
+                // If this is not the active player's move, remove the unit from their deck
+                if (notif.args.player_id != this.player_id) {
+                    var deckElement = $('player_deck_' + (playerColor == 'red' ? 'bottom' : 'top'));
+                    var unitInDeck = deckElement.querySelector('.' + unitType + '.' + playerColor);
+                    if (unitInDeck) {
+                        dojo.destroy(unitInDeck);
+                    }
+                }
+            },
+            
+            createUnitDiv: function(unitId, unitType, playerColor) {
+                var unitDiv = dojo.create('div', {
+                    id: unitId,
+                    class: 'unit ' + unitType + ' ' + playerColor
+                });
+                return unitDiv;
+            }
         });
     });
