@@ -43,7 +43,7 @@ define([
             */
 
             setup: function (gamedatas) {
-                
+
                 console.log("Starting game setup");
 
                 // Setting up player boards
@@ -60,7 +60,7 @@ define([
 
                 // Setup game notifications to handle (see "setupNotifications" method below)
                 this.setupNotifications();
-                
+
                 // Add event listeners to the units
                 dojo.query('.unit').connect('onclick', this, dojo.hitch(this, 'handleUnitClick'));
 
@@ -83,13 +83,13 @@ define([
                 console.log("Ending game setup");
             },
 
-            placeUnitOnBoard: function(unitId, unitType, x, y, playerId) {
+            placeUnitOnBoard: function (unitId, unitType, x, y, playerId) {
                 var unitDiv = $(unitId);
                 if (!unitDiv) {
                     // If the unit doesn't exist (e.g., after a refresh), create it
                     unitDiv = this.createUnitDiv(unitId, unitType, playerId);
                 }
-                
+
                 // Move the unit to the correct position on the board
                 var slot = $('board_slot_' + x + '_' + y);
                 if (slot) {
@@ -102,8 +102,8 @@ define([
                 this.removeSlotHighlight();
 
                 if (!this.isSlotOccupied(event.target)) {
-                    this.finishEnlist(this.selectedUnit.classList[1], 
-                        event.target.dataset.x, event.target.dataset.y, 
+                    this.finishEnlist(this.selectedUnit.classList[1],
+                        event.target.dataset.x, event.target.dataset.y,
                         this.selectedUnit.id);
 
                     this.selectedUnit.classList.remove("selected");
@@ -125,7 +125,7 @@ define([
                 }
             },
             removeSlotHighlight: function () {
-                
+
                 const highlightedSlots = document.querySelectorAll('.highlighted');
                 highlightedSlots.forEach(slot => {
                     slot.classList.remove('highlighted');
@@ -147,47 +147,48 @@ define([
             },
 
             handleUnitClick: function (event) {
-                
-                switch (event.target.classList[1]) {
-                    case 'battleship':
-                        const waterSlot = document.querySelectorAll('.water');
-                        waterSlot.forEach(slot => {
-                            slot.classList.add('highlighted');
-                        });
-                        this.selectedUnit = event.target.id;
-                        break;
-                    case 'infantry':
-                        const landSlot = document.querySelectorAll('.land');
-                        landSlot.forEach(slot => {
-                            slot.classList.add('highlighted');
-                        });
-                        this.selectedUnit = event.target.id;
-                        break;
-                }
-                //if (gameState !== 'enlist') return;
+                if (this.isCurrentPlayerActive()) {
+                    switch (event.target.classList[1]) {
+                        case 'battleship':
+                            const waterSlot = document.querySelectorAll('.water');
+                            waterSlot.forEach(slot => {
+                                slot.classList.add('highlighted');
+                            });
+                            this.selectedUnit = event.target.id;
+                            break;
+                        case 'infantry':
+                            const landSlot = document.querySelectorAll('.land');
+                            landSlot.forEach(slot => {
+                                slot.classList.add('highlighted');
+                            });
+                            this.selectedUnit = event.target.id;
+                            break;
+                    }
+                    //if (gameState !== 'enlist') return;
 
-                // Deselect previously selected token
-                this.selectedUnit = document.querySelectorAll('.selected');
-                if (this.selectedUnit && this.selectedUnit.length > 0) {
-                    this.selectedUnit.forEach(sUnit => {
-                        sUnit.classList.remove('selected');
+                    // Deselect previously selected token
+                    this.selectedUnit = document.querySelectorAll('.selected');
+                    if (this.selectedUnit && this.selectedUnit.length > 0) {
+                        this.selectedUnit.forEach(sUnit => {
+                            sUnit.classList.remove('selected');
+                        });
+                    }
+                    const highlightesShoreSpaces = document.querySelectorAll('.highlighted');
+                    if (this.highlightesShoreSpaces && this.highlightesShoreSpaces.length > 0) {
+                        this.highlightesShoreSpaces.forEach(highlightesShoreSpace => {
+                            highlightesShoreSpace.classList.remove('highlighted');
+                        });
+                    }
+                    // Select the clicked Unit
+                    this.selectedUnit = event.target;
+                    this.selectedUnit.classList.add('selected');
+
+                    // Highlight shore spaces
+                    const shoreSpaces = document.querySelectorAll('.shore');
+                    shoreSpaces.forEach(space => {
+                        space.classList.add('highlighted');
                     });
                 }
-                const highlightesShoreSpaces = document.querySelectorAll('.highlighted');
-                if (this.highlightesShoreSpaces && this.highlightesShoreSpaces.length > 0) {
-                    this.highlightesShoreSpaces.forEach(highlightesShoreSpace => {
-                        highlightesShoreSpace.classList.remove('highlighted');
-                    });
-                }
-                // Select the clicked Unit
-                this.selectedUnit = event.target;
-                this.selectedUnit.classList.add('selected');
-
-                // Highlight shore spaces
-                const shoreSpaces = document.querySelectorAll('.shore');
-                shoreSpaces.forEach(space => {
-                    space.classList.add('highlighted');
-                });
             },
 
             initBoard: function (gamedatas) {
@@ -234,7 +235,7 @@ define([
                 for (const type in decks) {
                     const unitDeck = deckElement.querySelector(`.${type}_deck`);
                     decks[type].forEach(function (unit, i) {
-                        
+
                         const unitElement = document.createElement('div');
                         unitElement.id = `${unit.type}_${unit.player}_00${i}`
                         unitElement.className = `unit ${unit.type} ${unit.player}`;
@@ -335,7 +336,7 @@ define([
             
             */
             enlist: function () {
-                
+
                 // Remove existing highlight
                 this.removeButtonHighlight();
 
@@ -343,7 +344,7 @@ define([
                 btnEnlist.classList.add("btn-active");
             },
             finishEnlist: function (unitType, x, y, unitId) {
-                
+
                 if (this.checkAction('enlist')) {
                     this.ajaxcall("/fortify/fortify/enlist.html", {
                         unitType: unitType,
@@ -352,24 +353,24 @@ define([
                         unitId: unitId,
                         lock: true
                     }, this, function (result) {
-                        
+
                         // What to do after the server call if it succeeded
                         // (most of the time: nothing)
                     }, function (is_error) {
-                        
+
                         // What to do after the server call in any case
                     });
                 }
             },
             isSlotOccupied: function (slot) {
-                
-                if(slot.classList.contains("unit"))
+
+                if (slot.classList.contains("unit"))
                     return true;
                 else
                     return false;
             },
             fortify: function (event) {
-                
+
                 this.removeButtonHighlight();
 
                 event.currentTarget.classList.add("btn-active");
@@ -382,7 +383,7 @@ define([
             },
             removeButtonHighlight: function () {
                 let allActionButtons = document.querySelectorAll(".btn-active");
-                
+
                 if (allActionButtons && allActionButtons.length > 0) {
                     allActionButtons.forEach(actionButtons => {
                         actionButtons.classList.remove("btn-active");
@@ -442,30 +443,30 @@ define([
                 dojo.subscribe('unitEnlisted', this, "notif_unitEnlisted");
             },
 
-            notif_unitEnlisted: function(notif) {
+            notif_unitEnlisted: function (notif) {
                 console.log('Notification received: unitEnlisted', notif);
-            
+
                 // Create or move the unit on the board
                 var unitId = notif.args.unitId;
                 var unitType = notif.args.unit_type;
                 var x = notif.args.x;
                 var y = notif.args.y;
                 var playerColor = notif.args.player_color;
-            
+
                 // Check if the unit already exists (it might for the player who made the move)
                 var unitDiv = $(unitId);
                 if (!unitDiv) {
                     // If it doesn't exist, create it
                     unitDiv = this.createUnitDiv(unitId, unitType, playerColor);
                 }
-            
+
                 // Move the unit to the correct position on the board
                 var slot = $('board_slot_' + x + '_' + y);
                 if (slot) {
                     slot.appendChild(unitDiv);
                     unitDiv.style.margin = "2px 0 0 7px";
                 }
-            
+
                 // If this is not the active player's move, remove the unit from their deck
                 if (notif.args.player_id != this.player_id) {
                     var deckElement = $('player_deck_' + (playerColor == 'red' ? 'bottom' : 'top'));
@@ -475,8 +476,8 @@ define([
                     }
                 }
             },
-            
-            createUnitDiv: function(unitId, unitType, playerColor) {
+
+            createUnitDiv: function (unitId, unitType, playerColor) {
                 var unitDiv = dojo.create('div', {
                     id: unitId,
                     class: 'unit ' + unitType + ' ' + playerColor
