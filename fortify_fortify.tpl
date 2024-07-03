@@ -34,7 +34,7 @@
             <div class="unit_deck tank_deck"></div>
         </div>
         <div id="board_container">
-        <div class="action-menu">
+            <div class="action-menu">
                 <button class="action-button" id="btnMove">MOVE</button>
                 <button class="action-button" id="btnAttack">ATTACK</button>
                 <button class="action-button" id="btnFortify">FORTIFY</button>
@@ -76,7 +76,9 @@
                     <div class="reinforcement_slot"></div>
                     <div class="reinforcement_slot heart_slot"></div>
                 </div>
+                <button class="action-button" id="btnEndTurn">END TURN</button>
             </div>
+
         </div>
         <div id="player_deck_bottom" class="player_deck">
             <div class="unit_deck infantry_deck"></div>

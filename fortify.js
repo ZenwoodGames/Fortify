@@ -81,11 +81,26 @@ define([
             handleSlotClick: function (event) {
                 this.removeSlotHighlight();
 
-                this.finishEnlist(this.selectedUnit.classList[1], event.target.dataset.x, event.target.dataset.y);
+                if (!this.isSlotOccupied(event.target)) {
+                    this.finishEnlist(this.selectedUnit.classList[1], event.target.dataset.x, event.target.dataset.y);
 
-                this.selectedUnit.classList.remove("selected");
-                this.selectedUnit.style = "margin: 2px 0 0 7px;"
-                event.target.appendChild(this.selectedUnit);
+                    this.selectedUnit.classList.remove("selected");
+                    this.selectedUnit.style = "margin: 2px 0 0 7px;"
+                    event.target.appendChild(this.selectedUnit);
+                }
+                else {
+                    // Remove unit selection
+                    //this.removeUnitHighlight();
+                    //this.removeSlotHighlight();
+                }
+            },
+            removeUnitHighlight: function () {
+                this.selectedUnit = document.querySelectorAll('.selected');
+                if (this.selectedUnit && this.selectedUnit.length > 0) {
+                    this.selectedUnit.forEach(sUnit => {
+                        sUnit.classList.remove('selected');
+                    });
+                }
             },
             removeSlotHighlight: function () {
                 debugger;
@@ -305,7 +320,7 @@ define([
                 let btnEnlist = document.getElementById("btnEnlist");
                 btnEnlist.classList.add("btn-active");
             },
-            finishEnlist: function(unitType, x, y){
+            finishEnlist: function (unitType, x, y) {
                 debugger;
                 if (this.checkAction('enlist')) {
                     this.ajaxcall("/fortify/fortify/enlist.html", {
@@ -313,7 +328,7 @@ define([
                         x: x,
                         y: y,
                         lock: true
-                    }, this, function(result) {
+                    }, this, function (result) {
                         debugger;
                         // What to do after the server call if it succeeded
                         // (most of the time: nothing)
@@ -322,6 +337,13 @@ define([
                         // What to do after the server call in any case
                     });
                 }
+            },
+            isSlotOccupied: function (slot) {
+                debugger;
+                if(slot.classList.contains("unit"))
+                    return true;
+                else
+                    return false;
             },
             fortify: function (event) {
                 debugger;
