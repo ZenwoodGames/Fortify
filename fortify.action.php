@@ -69,9 +69,10 @@ class action_fortify extends APP_GameAction
     $unitType = self::getArg("unitType", AT_alphanum, true);
     $x = self::getArg("x", AT_int, true);
     $y = self::getArg("y", AT_int, true);
+    $unitId = self::getArg("unitId", AT_alphanum, true);
 
     // Call the enlist method on the game instance
-    $this->game->enlist($unitType, $x, $y);
+    $this->game->enlist($unitType, $x, $y, $unitId);
 
     self::ajaxResponse();
   }

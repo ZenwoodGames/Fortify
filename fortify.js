@@ -43,7 +43,7 @@ define([
             */
 
             setup: function (gamedatas) {
-                debugger;
+                
                 console.log("Starting game setup");
 
                 // Setting up player boards
@@ -60,7 +60,7 @@ define([
 
                 // Setup game notifications to handle (see "setupNotifications" method below)
                 this.setupNotifications();
-                debugger;
+                
                 // Add event listeners to the units
                 dojo.query('.unit').connect('onclick', this, dojo.hitch(this, 'handleUnitClick'));
 
@@ -75,14 +75,36 @@ define([
 
                 this.addEventListenserForActionButtons(gamedatas.gamestate.possibleactions);
 
+                for (var i in gamedatas.units) {
+                    var unit = gamedatas.units[i];
+                    this.placeUnitOnBoard(unit.unit_id, unit.type, unit.x, unit.y, unit.player_id);
+                }
+
                 console.log("Ending game setup");
+            },
+
+            placeUnitOnBoard: function(unitId, unitType, x, y, playerId) {
+                var unitDiv = $(unitId);
+                if (!unitDiv) {
+                    // If the unit doesn't exist (e.g., after a refresh), create it
+                    unitDiv = this.createUnitDiv(unitId, unitType, playerId);
+                }
+                
+                // Move the unit to the correct position on the board
+                var slot = $('board_slot_' + x + '_' + y);
+                if (slot) {
+                    slot.appendChild(unitDiv);
+                    unitDiv.style = "margin: 2px 0 0 7px;"
+                }
             },
 
             handleSlotClick: function (event) {
                 this.removeSlotHighlight();
 
                 if (!this.isSlotOccupied(event.target)) {
-                    this.finishEnlist(this.selectedUnit.classList[1], event.target.dataset.x, event.target.dataset.y);
+                    this.finishEnlist(this.selectedUnit.classList[1], 
+                        event.target.dataset.x, event.target.dataset.y, 
+                        this.selectedUnit.id);
 
                     this.selectedUnit.classList.remove("selected");
                     this.selectedUnit.style = "margin: 2px 0 0 7px;"
@@ -103,7 +125,7 @@ define([
                 }
             },
             removeSlotHighlight: function () {
-                debugger;
+                
                 const highlightedSlots = document.querySelectorAll('.highlighted');
                 highlightedSlots.forEach(slot => {
                     slot.classList.remove('highlighted');
@@ -125,7 +147,7 @@ define([
             },
 
             handleUnitClick: function (event) {
-                debugger;
+                
                 switch (event.target.classList[1]) {
                     case 'battleship':
                         const waterSlot = document.querySelectorAll('.water');
@@ -212,7 +234,7 @@ define([
                 for (const type in decks) {
                     const unitDeck = deckElement.querySelector(`.${type}_deck`);
                     decks[type].forEach(function (unit, i) {
-                        debugger;
+                        
                         const unitElement = document.createElement('div');
                         unitElement.id = `${unit.type}_${unit.player}_00${i}`
                         unitElement.className = `unit ${unit.type} ${unit.player}`;
@@ -313,40 +335,41 @@ define([
             
             */
             enlist: function () {
-                debugger;
+                
                 // Remove existing highlight
                 this.removeButtonHighlight();
 
                 let btnEnlist = document.getElementById("btnEnlist");
                 btnEnlist.classList.add("btn-active");
             },
-            finishEnlist: function (unitType, x, y) {
-                debugger;
+            finishEnlist: function (unitType, x, y, unitId) {
+                
                 if (this.checkAction('enlist')) {
                     this.ajaxcall("/fortify/fortify/enlist.html", {
                         unitType: unitType,
                         x: x,
                         y: y,
+                        unitId: unitId,
                         lock: true
                     }, this, function (result) {
-                        debugger;
+                        
                         // What to do after the server call if it succeeded
                         // (most of the time: nothing)
                     }, function (is_error) {
-                        debugger;
+                        
                         // What to do after the server call in any case
                     });
                 }
             },
             isSlotOccupied: function (slot) {
-                debugger;
+                
                 if(slot.classList.contains("unit"))
                     return true;
                 else
                     return false;
             },
             fortify: function (event) {
-                debugger;
+                
                 this.removeButtonHighlight();
 
                 event.currentTarget.classList.add("btn-active");
@@ -359,7 +382,7 @@ define([
             },
             removeButtonHighlight: function () {
                 let allActionButtons = document.querySelectorAll(".btn-active");
-                debugger;
+                
                 if (allActionButtons && allActionButtons.length > 0) {
                     allActionButtons.forEach(actionButtons => {
                         actionButtons.classList.remove("btn-active");

@@ -123,7 +123,7 @@ class Fortify extends Table
         $result['players'] = self::getCollectionFromDb($sql);
 
         // Get units & their data
-        $sql = "SELECT id, type, player_id, x, y FROM units";
+        $sql = "SELECT id, type, player_id, x, y, unit_id FROM units";
         $result['units'] = self::getObjectListFromDB($sql);
 
         // Initialize decks (example data)
@@ -278,7 +278,7 @@ class Fortify extends Table
 
     }
 
-    function enlist($unitType, $x, $y)
+    function enlist($unitType, $x, $y, $unitId)
     {
         // Check if it's a valid action
         if (!$this->checkAction('enlist')) {
@@ -320,7 +320,7 @@ class Fortify extends Table
         }
 
         // Add the unit to the board
-        $sql = "INSERT INTO units (type, player_id, x, y) VALUES ('$unitType', $player_id, $x, $y)";
+        $sql = "INSERT INTO units (type, player_id, x, y, unit_id) VALUES ('$unitType', $player_id, $x, $y, '$unitId')";
         self::DbQuery($sql);
 
         // Notify all players about the new unit
@@ -329,7 +329,8 @@ class Fortify extends Table
             'player_name' => self::getActivePlayerName(),
             'unit_type' => $unitType,
             'x' => $x,
-            'y' => $y
+            'y' => $y,
+            'unitId' => $unitId
         ]);
 
         // Move to the next player

@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS `units` (
     `type` ENUM('infantry', 'tank', 'battleship', 'chopper', 'artillery') NOT NULL,
     `player_id` INT NOT NULL,
     `x` INT NOT NULL,
-    `y` INT NOT NULL
+    `y` INT NOT NULL,
+    `unit_id` VARCHAR(24) NOT NULL
 );
 
