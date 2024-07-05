@@ -253,6 +253,9 @@ define([
             onEnteringState: function (stateName, args) {
                 console.log('Entering state: ' + stateName);
                 switch (stateName) {
+                    case 'playerTurn':
+                        this.updateActionCounter(args.args.actionsRemaining);
+                        break;
                     case 'playerFirstTurn':
                         this.enlist()
                         break;
@@ -321,6 +324,14 @@ define([
             
             */
 
+            updateActionCounter: function (actionsRemaining) {
+                // Update the UI to show the number of actions remaining
+                var actionCounterElement = $('action-counter');
+                if (actionCounterElement) {
+                    actionCounterElement.innerHTML = _('Actions remaining: ${actionsRemaining}')
+                        .replace('${actionsRemaining}', actionsRemaining);
+                }
+            },
 
             ///////////////////////////////////////////////////
             //// Player's action
@@ -441,8 +452,11 @@ define([
                 console.log('notifications subscriptions setup');
 
                 dojo.subscribe('unitEnlisted', this, "notif_unitEnlisted");
+                dojo.subscribe('actionsRemaining', this, "notif_actionsRemaining");
             },
-
+            notif_actionsRemaining: function(notif) {
+                this.updateActionCounter(notif.args.actionsRemaining);
+            },
             notif_unitEnlisted: function (notif) {
                 console.log('Notification received: unitEnlisted', notif);
 

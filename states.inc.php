@@ -62,63 +62,59 @@ $machinestates = array(
         "action" => "stGameSetup",
         "transitions" => array("" => ST_PLAYER_F_TURN)
     ),
+    
     // Player must enlist in first turn
     ST_PLAYER_F_TURN => array(
         "name" => "playerFirstTurn",
+        "description" => clienttranslate('${actplayer} must take an action'),
+        "descriptionmyturn" => clienttranslate('${you} must take an action'),
+        "type" => "activeplayer",
+        "args" => "argPlayerTurn",
+        "possibleactions" => array("enlist", "move", "fortify", "attack", "pass"),
+        "transitions" => array(
+            "nextPlayerFirstTurn" => ST_NEXT_PLAYER,
+            "playerFirstTurn" => ST_PLAYER_F_TURN,
+            "endTurn" => ST_NEXT_PLAYER
+        )
+    ),
+
+    ST_PLAYER_F_ENLIST => array(
+        "name" => "playerFirstEnlist",
         "description" => clienttranslate('${actplayer} must enlist a unit'),
         "descriptionmyturn" => clienttranslate('${you} must enlist a unit'),
         "type" => "activeplayer",
         "possibleactions" => array("enlist"),
         "transitions" => array(
-            "nextPlayerFirstTurn" => ST_NEXT_PLAYER,
-            "endFirstTurns" => ST_NEXT_PLAYER
+            "playerFirstTurn" => ST_PLAYER_F_TURN
         )
     ),
 
     // Player's turn
     ST_PLAYER_TURN => array(
         "name" => "playerTurn",
-        "description" => clienttranslate('${actplayer} must take two Actions, or Pass'),
-        "descriptionmyturn" => clienttranslate('${you} must take two Actions, or Pass'),
+        "description" => clienttranslate('${actplayer} must take up to two Actions'),
+        "descriptionmyturn" => clienttranslate('${you} must take up to two Actions'),
         "type" => "activeplayer",
-        "possibleactions" => array("enlist", "move", "fortify", "attack", "pass"),
-        "transitions" => array("next" => ST_NEXT_PLAYER)
+        "args" => "argPlayerTurn",
+        "possibleactions" => array("enlist", "move", "fortify", "attack", "pass", "endTurn"),
+        "transitions" => array(
+            "nextPlayer" => ST_NEXT_PLAYER,
+            "endTurn" => ST_NEXT_PLAYER,
+            "endGame" => 99
+        )
     ),
 
-    // Next player
     ST_NEXT_PLAYER => array(
         'name' => 'nextPlayer',
         'description' => '',
         'type' => 'game',
         'action' => 'stNextPlayer',
         "transitions" => array(
-            "firstTurn" => ST_PLAYER_F_TURN,
+            "playerFirstTurn" => ST_PLAYER_F_TURN,
+            "playerFirstEnlist" => ST_PLAYER_F_ENLIST,
             "playerTurn" => ST_PLAYER_TURN
         )
     ),
-
-    /*
-    Examples:
-    
-    2 => array(
-        "name" => "nextPlayer",
-        "description" => '',
-        "type" => "game",
-        "action" => "stNextPlayer",
-        "updateGameProgression" => true,   
-        "transitions" => array( "endGame" => 99, "nextPlayer" => 10 )
-    ),
-    
-    10 => array(
-        "name" => "playerTurn",
-        "description" => clienttranslate('${actplayer} must play a card or pass'),
-        "descriptionmyturn" => clienttranslate('${you} must play a card or pass'),
-        "type" => "activeplayer",
-        "possibleactions" => array( "playCard", "pass" ),
-        "transitions" => array( "playCard" => 2, "pass" => 2 )
-    ), 
-
-*/
 
     // Final state.
     // Please do not modify (and do not overload action/args methods).

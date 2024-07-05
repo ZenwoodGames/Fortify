@@ -8,6 +8,7 @@
             <div class="unit_deck battleship_deck"></div>
             <div class="unit_deck tank_deck"></div>
         </div>
+        <div id="action-counter"></div>
         <div id="board_container">
             <div class="action-menu">
                 <button class="action-button" id="btnMove">MOVE</button>
