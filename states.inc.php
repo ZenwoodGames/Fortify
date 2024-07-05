@@ -100,7 +100,7 @@ $machinestates = array(
         "transitions" => array(
             "nextPlayer" => ST_NEXT_PLAYER,
             "endTurn" => ST_NEXT_PLAYER,
-            "endGame" => 99
+            "stayInState" => ST_PLAYER_TURN  // Add this line
         )
     ),
 

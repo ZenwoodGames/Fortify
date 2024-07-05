@@ -186,15 +186,9 @@ class Fortify extends Table
         self::giveExtraTime($player_id);
 
         $isFirstRound = $this->getGameStateValue('isFirstRound');
-        $isVeryFirstTurn = $this->getGameStateValue('isVeryFirstTurn');
 
-        if ($isVeryFirstTurn) {
-            // Very first turn: 1 action
-            $this->setGameStateValue('actionsRemaining', 1);
-            $this->setGameStateValue('isVeryFirstTurn', 0); // Turn off the flag
-            $this->gamestate->nextState('playerFirstTurn');
-        } else if ($isFirstRound) {
-            // Still in first round, but not the very first turn: 2 actions
+        if ($isFirstRound) {
+            // First round: 2 actions per player, first must be enlist
             $this->setGameStateValue('actionsRemaining', 2);
             $this->gamestate->nextState('playerFirstEnlist');
         } else {
@@ -316,42 +310,42 @@ class Fortify extends Table
         ]);
 
         // Decrease the action counter
-    $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
-    $this->setGameStateValue('actionsRemaining', $actionsRemaining);
+        $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
+        $this->setGameStateValue('actionsRemaining', $actionsRemaining);
 
-    // Check if this was the first round
-    $isFirstRound = $this->getGameStateValue('isFirstRound');
-    $isVeryFirstTurn = $this->getGameStateValue('isVeryFirstTurn');
+        // Check if this was the first round
+        $isFirstRound = $this->getGameStateValue('isFirstRound');
+        $isVeryFirstTurn = $this->getGameStateValue('isVeryFirstTurn');
 
-    if ($isFirstRound) {
-        if ($isVeryFirstTurn || $actionsRemaining == 0) {
-            // If it's the very first turn or we've used all actions, move to next player
-            $this->gamestate->nextState('nextPlayerFirstTurn');
+        if ($isFirstRound) {
+            if ($isVeryFirstTurn || $actionsRemaining == 0) {
+                // If it's the very first turn or we've used all actions, move to next player
+                $this->gamestate->nextState('nextPlayerFirstTurn');
+            } else {
+                // Otherwise, go to regular first round turn
+                $this->gamestate->nextState('playerFirstTurn');
+            }
+
+            // Check if all players have placed their first unit
+            $sql = "SELECT COUNT(*) FROM units";
+            $unitCount = self::getUniqueValueFromDB($sql);
+            if ($unitCount == count($this->loadPlayersBasicInfos())) {
+                // If all players have placed their first unit, end first round
+                $this->setGameStateValue('isFirstRound', 0);
+            }
         } else {
-            // Otherwise, go to regular first round turn
-            $this->gamestate->nextState('playerFirstTurn');
+            // Regular round logic
+            if ($actionsRemaining == 0) {
+                $this->gamestate->nextState('endTurn');
+            } else {
+                // Notify clients about the updated action count
+                self::notifyAllPlayers('actionsRemaining', '', array(
+                    'actionsRemaining' => $actionsRemaining
+                ));
+                // Stay in the current state without transitioning
+                $this->gamestate->nextState('stayInState');
+            }
         }
-
-        // Check if all players have placed their first unit
-        $sql = "SELECT COUNT(*) FROM units";
-        $unitCount = self::getUniqueValueFromDB($sql);
-        if ($unitCount == count($this->loadPlayersBasicInfos())) {
-            // If all players have placed their first unit, end first round
-            $this->setGameStateValue('isFirstRound', 0);
-        }
-    } else {
-        // Regular round logic
-        if ($actionsRemaining == 0) {
-            $this->gamestate->nextState('endTurn');
-        } else {
-            // Notify clients about the updated action count
-            self::notifyAllPlayers('actionsRemaining', '', array(
-                'actionsRemaining' => $actionsRemaining
-            ));
-            // Stay in the current state
-            $this->gamestate->nextState('playerTurn');
-        }
-    }
     }
 
     public function endTurn()
