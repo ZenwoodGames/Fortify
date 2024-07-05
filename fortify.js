@@ -151,7 +151,7 @@ define([
             handleUnitClick: function (event) {
                 debugger;
                 // Get the current player's color
-                var currentPlayerColor = this.playerColor; // Assuming this is set somewhere in your code
+                var currentPlayerColor = this.playerColor;
 
                 // Get the clicked unit's color
                 var unitColor = event.target.classList.contains('red') ? 'red' : 'green';
@@ -162,6 +162,7 @@ define([
                     return;
                 }
 
+                this.removeSlotHighlight();
                 if (this.isCurrentPlayerActive()) {
                     switch (event.target.classList[1]) {
                         case 'battleship':
@@ -172,6 +173,7 @@ define([
                             this.selectedUnit = event.target.id;
                             break;
                         case 'infantry':
+                        case 'tank':
                             const landSlot = document.querySelectorAll('.land');
                             landSlot.forEach(slot => {
                                 slot.classList.add('highlighted');
@@ -182,6 +184,8 @@ define([
                     //if (gameState !== 'enlist') return;
 
                     // Deselect previously selected token
+
+
                     this.selectedUnit = document.querySelectorAll('.selected');
                     if (this.selectedUnit && this.selectedUnit.length > 0) {
                         this.selectedUnit.forEach(sUnit => {
