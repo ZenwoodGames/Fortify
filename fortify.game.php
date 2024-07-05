@@ -271,6 +271,18 @@ class Fortify extends Table
             throw new BgaUserException(self::_("Invalid unit type"));
         }
 
+        // Get the player's color
+        $players = self::loadPlayersBasicInfos();
+        $player_color = $players[$player_id]['player_color'];
+
+        // Extract the color from the unitId (assuming unitId format like "infantry_red_001")
+        $unit_color = explode('_', $unitId)[1];
+
+        // Check if the player is selecting the correct color
+        if ($player_color != $unit_color) {
+            throw new BgaUserException(self::_("You can only select tokens of your own color"));
+        }
+
         // Validate the coordinates
         if ($x < 0 || $x > 3 || $y < 0 || $y > 4) {
             throw new BgaUserException(self::_("Invalid coordinates"));

@@ -25,7 +25,7 @@ define([
             constructor: function () {
                 console.log('fortify constructor');
                 let selectedUnit = null;
-
+                let playerColor = null;
 
             },
 
@@ -51,6 +51,8 @@ define([
                     var player = gamedatas.players[player_id];
                     // TODO: Setting up players boards if needed
                 }
+                debugger;
+                this.playerColor = gamedatas.players[this.player_id].color;
 
                 // Initialize the game board
                 this.initBoard(gamedatas);
@@ -147,6 +149,19 @@ define([
             },
 
             handleUnitClick: function (event) {
+                debugger;
+                // Get the current player's color
+                var currentPlayerColor = this.playerColor; // Assuming this is set somewhere in your code
+
+                // Get the clicked unit's color
+                var unitColor = event.target.classList.contains('red') ? 'red' : 'green';
+
+                // Check if the player is selecting the correct color
+                if (currentPlayerColor !== unitColor) {
+                    this.showMessage(_("You can only select tokens of your own color"), "error");
+                    return;
+                }
+
                 if (this.isCurrentPlayerActive()) {
                     switch (event.target.classList[1]) {
                         case 'battleship':
@@ -239,6 +254,7 @@ define([
                         const unitElement = document.createElement('div');
                         unitElement.id = `${unit.type}_${unit.player}_00${i}`
                         unitElement.className = `unit ${unit.type} ${unit.player}`;
+                        unitElement.setAttribute("data-color", `${unit.player}`);
                         unitDeck.appendChild(unitElement);
                     });
                 }
@@ -454,7 +470,7 @@ define([
                 dojo.subscribe('unitEnlisted', this, "notif_unitEnlisted");
                 dojo.subscribe('actionsRemaining', this, "notif_actionsRemaining");
             },
-            notif_actionsRemaining: function(notif) {
+            notif_actionsRemaining: function (notif) {
                 this.updateActionCounter(notif.args.actionsRemaining);
             },
             notif_unitEnlisted: function (notif) {
