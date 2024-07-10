@@ -360,6 +360,81 @@ class Fortify extends Table
         }
     }
 
+    function move($unitId, $toX, $toY)
+    {
+        self::checkAction('move');
+
+        $player_id = self::getActivePlayerId();
+        $players = self::loadPlayersBasicInfos();
+        $player_color = $players[$player_id]['player_color'];
+
+        // Get the current position of the unit
+        $sql = "SELECT x, y FROM units WHERE unit_Id = '$unitId'";
+        $unit = self::getObjectFromDB($sql);
+
+        if (!$unit) {
+            throw new BgaUserException(self::_("Invalid unit"));
+        }
+
+        $fromX = $unit['x'];
+        $fromY = $unit['y'];
+
+        // Check if the move is valid
+        if (!$this->isValidMove($player_color, $fromX, $fromY, $toX, $toY)) {
+            throw new BgaUserException(self::_("Invalid move"));
+        }
+
+        // Perform the move
+        $sql = "UPDATE units SET x = $toX, y = $toY WHERE unit_Id = '$unitId'";
+        self::DbQuery($sql);
+
+        // Notify all players about the move
+        self::notifyAllPlayers('unitMoved', clienttranslate('${player_name} moved a unit from (${fromX},${fromY}) to (${toX},${toY})'), [
+            'player_id' => $player_id,
+            'player_name' => self::getActivePlayerName(),
+            'unit_Id' => $unitId,
+            'fromX' => $fromX,
+            'fromY' => $fromY,
+            'toX' => $toX,
+            'toY' => $toY
+        ]);
+
+        // Decrease the action counter
+        $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
+        $this->setGameStateValue('actionsRemaining', $actionsRemaining);
+
+        if ($actionsRemaining == 0) {
+            $this->gamestate->nextState('endTurn');
+        } else {
+            $this->gamestate->nextState('stayInState');
+        }
+    }
+
+    function isValidMove($player_color, $fromX, $fromY, $toX, $toY)
+    {
+        // Check if the destination is empty
+        $sql = "SELECT COUNT(*) FROM units WHERE x = $toX AND y = $toY";
+        if (self::getUniqueValueFromDB($sql) > 0) {
+            return false;
+        }
+
+        // Check if it's an orthogonal adjacent move
+        if (($fromX == $toX && abs($fromY - $toY) == 1) || ($fromY == $toY && abs($fromX - $toX) == 1)) {
+            return true;
+        }
+
+        // Check if it's an orthogonal jump to a space adjacent to a friendly unit
+        $sql = "SELECT COUNT(*) FROM units WHERE player_id = (SELECT player_id FROM player WHERE player_color = '$player_color') AND (
+        (x = $toX AND (y = $toY - 1 OR y = $toY + 1)) OR
+        (y = $toY AND (x = $toX - 1 OR x = $toX + 1))
+    )";
+        if (self::getUniqueValueFromDB($sql) > 0) {
+            return true;
+        }
+
+        return false;
+    }
+
     public function endTurn()
     {
         self::checkAction('endTurn');

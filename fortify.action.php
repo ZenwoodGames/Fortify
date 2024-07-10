@@ -83,4 +83,19 @@ class action_fortify extends APP_GameAction
     $result = $this->game->endTurn();
     self::ajaxResponse();
   }
+
+  public function move()
+{
+    self::setAjaxMode();
+
+    // Retrieve arguments
+    $unitId = self::getArg("unitId", AT_alphanum, true);
+    $toX = self::getArg("toX", AT_int, true);
+    $toY = self::getArg("toY", AT_int, true);
+
+    // Call the move method on the game instance
+    $this->game->move($unitId, $toX, $toY);
+
+    self::ajaxResponse();
+}
 }

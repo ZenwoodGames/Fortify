@@ -26,7 +26,7 @@ define([
                 console.log('fortify constructor');
                 let selectedUnit = null;
                 let playerColor = null;
-
+                let gameState = '';
             },
 
             /*
@@ -51,7 +51,7 @@ define([
                     var player = gamedatas.players[player_id];
                     // TODO: Setting up players boards if needed
                 }
-                debugger;
+
                 this.playerColor = gamedatas.players[this.player_id].color;
 
                 // Initialize the game board
@@ -73,7 +73,7 @@ define([
 
                 // Add event listener for slots
                 dojo.query('.board-slot').connect('onclick', this, dojo.hitch(this, 'handleSlotClick'));
-
+                dojo.connect($('btnMove'), 'onclick', this, 'startMoveAction');
 
                 this.addEventListenserForActionButtons(gamedatas.gamestate.possibleactions);
 
@@ -101,22 +101,38 @@ define([
             },
 
             handleSlotClick: function (event) {
+                debugger;
+
+
+                switch (this.gameState) {
+                    case 'moving':
+                        var toX = parseInt(event.currentTarget.dataset.x);
+                        var toY = parseInt(event.currentTarget.dataset.y);
+                        var unitId = this.selectedUnit.id;
+
+                        if (event.currentTarget.classList.contains('highlighted')) {
+                            this.moveUnit(unitId, toX, toY);
+                        }
+                        break;
+                    case 'firstEnlisting':
+                    case 'enlist':
+                        if (!this.isSlotOccupied(event.target)) {
+                            this.finishEnlist(this.selectedUnit.classList[1],
+                                event.target.dataset.x, event.target.dataset.y,
+                                this.selectedUnit.id);
+
+                            this.selectedUnit.classList.remove("selected");
+                            this.selectedUnit.style = "margin: 2px 0 0 7px;"
+                            event.target.appendChild(this.selectedUnit);
+                        }
+                        else {
+                            // Remove unit selection
+                            //this.removeUnitHighlight();
+                            //this.removeSlotHighlight();
+                        }
+                        break;
+                }
                 this.removeSlotHighlight();
-
-                if (!this.isSlotOccupied(event.target)) {
-                    this.finishEnlist(this.selectedUnit.classList[1],
-                        event.target.dataset.x, event.target.dataset.y,
-                        this.selectedUnit.id);
-
-                    this.selectedUnit.classList.remove("selected");
-                    this.selectedUnit.style = "margin: 2px 0 0 7px;"
-                    event.target.appendChild(this.selectedUnit);
-                }
-                else {
-                    // Remove unit selection
-                    //this.removeUnitHighlight();
-                    //this.removeSlotHighlight();
-                }
             },
             removeUnitHighlight: function () {
                 this.selectedUnit = document.querySelectorAll('.selected');
@@ -174,11 +190,16 @@ define([
                             break;
                         case 'infantry':
                         case 'tank':
-                            const landSlot = document.querySelectorAll('.land');
-                            landSlot.forEach(slot => {
-                                slot.classList.add('highlighted');
-                            });
-                            this.selectedUnit = event.target.id;
+                            if (this.gamestate === 'moving') {
+                                this.highlightValidMoves();
+                            }
+                            else {
+                                const landSlot = document.querySelectorAll('.land');
+                                landSlot.forEach(slot => {
+                                    slot.classList.add('highlighted');
+                                });
+                                this.selectedUnit = event.target.id;
+                            }
                             break;
                     }
                     //if (gameState !== 'enlist') return;
@@ -186,27 +207,27 @@ define([
                     // Deselect previously selected token
 
 
-                    this.selectedUnit = document.querySelectorAll('.selected');
-                    if (this.selectedUnit && this.selectedUnit.length > 0) {
-                        this.selectedUnit.forEach(sUnit => {
-                            sUnit.classList.remove('selected');
-                        });
-                    }
-                    const highlightesShoreSpaces = document.querySelectorAll('.highlighted');
-                    if (this.highlightesShoreSpaces && this.highlightesShoreSpaces.length > 0) {
-                        this.highlightesShoreSpaces.forEach(highlightesShoreSpace => {
-                            highlightesShoreSpace.classList.remove('highlighted');
-                        });
-                    }
+                    // this.selectedUnit = document.querySelectorAll('.selected');
+                    // if (this.selectedUnit && this.selectedUnit.length > 0) {
+                    //     this.selectedUnit.forEach(sUnit => {
+                    //         sUnit.classList.remove('selected');
+                    //     });
+                    // }
+                    // const highlightesShoreSpaces = document.querySelectorAll('.highlighted');
+                    // if (this.highlightesShoreSpaces && this.highlightesShoreSpaces.length > 0) {
+                    //     this.highlightesShoreSpaces.forEach(highlightesShoreSpace => {
+                    //         highlightesShoreSpace.classList.remove('highlighted');
+                    //     });
+                    // }
                     // Select the clicked Unit
                     this.selectedUnit = event.target;
                     this.selectedUnit.classList.add('selected');
 
-                    // Highlight shore spaces
-                    const shoreSpaces = document.querySelectorAll('.shore');
-                    shoreSpaces.forEach(space => {
-                        space.classList.add('highlighted');
-                    });
+                    // // Highlight shore spaces
+                    // const shoreSpaces = document.querySelectorAll('.shore');
+                    // shoreSpaces.forEach(space => {
+                    //     space.classList.add('highlighted');
+                    // });
                 }
             },
 
@@ -271,14 +292,21 @@ define([
             //                  You can use this method to perform some user interface changes at this moment.
             //
             onEnteringState: function (stateName, args) {
+                debugger;
                 console.log('Entering state: ' + stateName);
                 switch (stateName) {
+                    case 'playerFirstEnlist':
+                        this.onEnterPlayerFirstEnlist(args);
+                        break;
                     case 'playerTurn':
                         this.updateActionCounter(args.args.actionsRemaining);
                         break;
                     case 'playerFirstTurn':
                         this.enlist()
                         break;
+                    // case 'playerFirstEnlist':
+                    //     this.enlist();
+                    //     break;
                     case 'enlist':
                         break;
                     case 'dummmy':
@@ -352,6 +380,19 @@ define([
                         .replace('${actionsRemaining}', actionsRemaining);
                 }
             },
+            removeAllHighlights: function () {
+                // Remove highlights from all board slots
+                var highlightedSlots = document.querySelectorAll('.board-slot.highlighted');
+                highlightedSlots.forEach(function (slot) {
+                    slot.classList.remove('highlighted');
+                });
+
+                // Remove selection from all units
+                var selectedUnits = document.querySelectorAll('.unit.selected');
+                selectedUnits.forEach(function (unit) {
+                    unit.classList.remove('selected');
+                });
+            },
 
             ///////////////////////////////////////////////////
             //// Player's action
@@ -367,12 +408,14 @@ define([
             
             */
             enlist: function () {
-
+                debugger;
+                // if (this.checkAction('enlist')) {
                 // Remove existing highlight
-                this.removeButtonHighlight();
+                this.removeAllHighlights();
 
-                let btnEnlist = document.getElementById("btnEnlist");
-                btnEnlist.classList.add("btn-active");
+                this.gameState = 'enlist';
+                this.updateActionButtons('enlist');
+                // }
             },
             finishEnlist: function (unitType, x, y, unitId) {
 
@@ -393,6 +436,20 @@ define([
                     });
                 }
             },
+            onEnterPlayerFirstEnlist: function (args) {
+                this.gameState = 'firstEnlisting';
+                this.updateActionButtons('enlist');
+                //this.highlightValidFirstEnlistSpaces();
+            },
+
+            highlightValidFirstEnlistSpaces: function () {
+                // Highlight only shore spaces for the first enlistment
+                var shoreSpaces = document.querySelectorAll('.board-slot.shore');
+                shoreSpaces.forEach(space => {
+                    space.classList.add('highlighted');
+                });
+            },
+
             isSlotOccupied: function (slot) {
 
                 if (slot.classList.contains("unit"))
@@ -400,15 +457,106 @@ define([
                 else
                     return false;
             },
+            resetGameState: function () {
+                this.gameState = '';
+                this.selectedUnit = null;
+                this.removeAllHighlights();
+                this.updateActionButtons('');
+            },
             fortify: function (event) {
 
                 this.removeButtonHighlight();
 
                 event.currentTarget.classList.add("btn-active");
             },
-            move: function (event) {
+            startMoveAction: function (event) {
+                debugger;
+                // Remove existing highlights
+                //this.removeAllHighlights();
 
+                // Highlight valid move locations
+                this.highlightValidMoves();
+
+                // Set the game state to 'moving'
+                this.gameState = 'moving';
+
+                // Update UI to show that we're in 'move' mode
+                this.updateActionButtons('move');
             },
+
+            updateActionButtons: function (activeAction) {
+                var actions = ['enlist', 'move', 'fortify', 'attack'];
+                actions.forEach(action => {
+                    var button = $('btn' + action.charAt(0).toUpperCase() + action.slice(1));
+                    if (button) {
+                        if (action === activeAction) {
+                            button.classList.add('active');
+                        } else {
+                            button.classList.remove('active');
+                        }
+                    }
+                });
+            },
+
+            highlightValidMoves: function () {
+                var selectedUnit = this.selectedUnit;
+                if (!selectedUnit) return;
+
+                var x = parseInt(selectedUnit.parentNode.dataset.x);
+                var y = parseInt(selectedUnit.parentNode.dataset.y);
+
+                // Highlight orthogonal adjacent empty spaces
+                var orthogonalDirections = [
+                    { dx: 0, dy: -1 }, // up
+                    { dx: 0, dy: 1 },  // down
+                    { dx: -1, dy: 0 }, // left
+                    { dx: 1, dy: 0 }   // right
+                ];
+
+                orthogonalDirections.forEach(dir => {
+                    debugger;
+                    var newX = x + dir.dx;
+                    var newY = y + dir.dy;
+                    var slot = document.querySelector(`.board-slot[data-x="${newX}"][data-y="${newY}"]`);
+                    if (slot && !slot.hasChildNodes()) {
+                        slot.classList.add('highlighted');
+                    }
+                });
+
+                // Highlight spaces orthogonally adjacent to friendly units
+                var friendlyUnits = document.querySelectorAll(`.unit.${this.playerColor}`);
+                friendlyUnits.forEach(unit => {
+                    var unitX = parseInt(unit.parentNode.dataset.x);
+                    var unitY = parseInt(unit.parentNode.dataset.y);
+                    orthogonalDirections.forEach(dir => {
+                        var newX = unitX + dir.dx;
+                        var newY = unitY + dir.dy;
+                        var slot = document.querySelector(`.board-slot[data-x="${newX}"][data-y="${newY}"]`);
+                        if (slot && !slot.hasChildNodes() && (newX !== x || newY !== y)) {
+                            slot.classList.add('highlighted');
+                        }
+                    });
+                });
+            },
+
+            moveUnit: function (unitId, toX, toY) {
+                if (this.checkAction('move')) {
+                    this.ajaxcall("/fortify/fortify/move.html", {
+                        unitId: unitId,
+                        toX: toX,
+                        toY: toY,
+                        lock: true
+                    }, this, function (result) {
+                        // What to do after the server call if it succeeded
+                        // (most of the time: nothing)
+                    }
+                    , function (is_error) {
+                        console.log(is_error);
+                        // What to do after the server call in any case
+                    });
+                }
+            },
+
             attack: function (event) {
 
             },
@@ -473,11 +621,13 @@ define([
 
                 dojo.subscribe('unitEnlisted', this, "notif_unitEnlisted");
                 dojo.subscribe('actionsRemaining', this, "notif_actionsRemaining");
+                dojo.subscribe('unitMoved', this, "notif_unitMoved");
             },
             notif_actionsRemaining: function (notif) {
                 this.updateActionCounter(notif.args.actionsRemaining);
             },
             notif_unitEnlisted: function (notif) {
+                debugger;
                 console.log('Notification received: unitEnlisted', notif);
 
                 // Create or move the unit on the board
@@ -509,6 +659,19 @@ define([
                         dojo.destroy(unitInDeck);
                     }
                 }
+                //this.resetGameState();
+            },
+
+            notif_unitMoved: function (notif) {
+                debugger;
+                // Move the unit on the client side
+                var unit = $(notif.args.unit_Id);
+                var toSlot = $('board_slot_' + notif.args.toX + '_' + notif.args.toY);
+                if (unit && toSlot) {
+                    toSlot.appendChild(unit);
+                }
+
+                this.resetGameState();
             },
 
             createUnitDiv: function (unitId, unitType, playerColor) {
