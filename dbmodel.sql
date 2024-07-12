@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS `units` (
     `player_id` INT NOT NULL,
     `x` INT NOT NULL,
     `y` INT NOT NULL,
-    `unit_id` VARCHAR(24) NOT NULL
+    `unit_id` VARCHAR(24) NOT NULL,
+    `is_fortified` BOOLEAN NOT NULL DEFAULT FALSE
 );
 

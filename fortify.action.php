@@ -85,7 +85,7 @@ class action_fortify extends APP_GameAction
   }
 
   public function move()
-{
+  {
     self::setAjaxMode();
 
     // Retrieve arguments
@@ -97,5 +97,18 @@ class action_fortify extends APP_GameAction
     $this->game->move($unitId, $toX, $toY);
 
     self::ajaxResponse();
-}
+  }
+
+  public function fortify()
+  {
+    self::setAjaxMode();
+
+    // Retrieve arguments
+    $unitId = self::getArg("unitId", AT_alphanum, true);
+
+    // Call the fortify method on the game instance
+    $this->game->fortify($unitId);
+
+    self::ajaxResponse();
+  }
 }

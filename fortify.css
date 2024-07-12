@@ -164,6 +164,11 @@
     border-width: thin;
 }
 
+.unit.fortified {
+    border: 2px solid gold;
+    box-shadow: 0 0 10px gold;
+}
+
 .highlighted{
     background-color: yellow;
     opacity: 0.3;
@@ -192,24 +197,48 @@
     background-image: url('img/infantry_red.png');
 }
 
+.infantry.red.unit.fortified {
+    background-image: url('img/infantry_red_fortified.png');
+}
+
 .infantry.green {
     background-image: url('img/infantry_green.png');
+}
+
+.infantry.green.unit.fortified {
+    background-image: url('img/infantry_green_fortified.png');
 }
 
 .battleship.red {
     background-image: url('img/battleship_red.png');
 }
 
+.battleship.red.fortified {
+    background-image: url('img/battleship_red_fortified.png');
+}
+
 .battleship.green {
     background-image: url('img/battleship_green.png');
+}
+
+.battleship.green.unit.fortified {
+    background-image: url('img/battleship_green_fortified.png');
 }
 
 .tank.red {
     background-image: url('img/tank_red.png');
 }
 
+.tank.red.unit.fortified {
+    background-image: url('img/tank_red_fortified.png');
+}
+
 .tank.green {
     background-image: url('img/tank_green.png');
+}
+
+.tank.green.unit.fortified {
+    background-image: url('img/tank_green_fortified.png');
 }
 
 #reinforcement_track {
