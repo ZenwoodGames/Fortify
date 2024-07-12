@@ -412,14 +412,17 @@ class Fortify extends Table
 
     function isValidMove($player_color, $fromX, $fromY, $toX, $toY)
     {
+        $this->serverLog("entered function isValidMove", "");
         // Check if the destination is empty
         $sql = "SELECT COUNT(*) FROM units WHERE x = $toX AND y = $toY";
         if (self::getUniqueValueFromDB($sql) > 0) {
+            $this->serverLog("more than 1 unique value found", "");
             return false;
         }
 
         // Check if it's an orthogonal adjacent move
         if (($fromX == $toX && abs($fromY - $toY) == 1) || ($fromY == $toY && abs($fromX - $toX) == 1)) {
+            $this->serverLog("not an orthogonal adjacent move", "");
             return true;
         }
 
@@ -429,6 +432,7 @@ class Fortify extends Table
         (y = $toY AND (x = $toX - 1 OR x = $toX + 1))
     )";
         if (self::getUniqueValueFromDB($sql) > 0) {
+            $this->serverLog("an orthogonal jump to a space adjacent to a friendly unit", "");
             return true;
         }
 
@@ -646,6 +650,161 @@ class Fortify extends Table
         $this->serverLog("getAdjacentUnits SQL", $sql);
         $this->serverLog("getAdjacentUnits result", $result);
         return $result;
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////// Attack ///////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    function attack($attackingUnitId, $defendingUnitId)
+    {
+        // Check if it's a valid action
+        self::checkAction('attack');
+
+        $player_id = self::getActivePlayerId();
+
+        // Get attacking unit details
+        $attackingUnit = $this->getUnitDetails($attackingUnitId);
+
+        // Get defending unit details
+        $defendingUnit = $this->getUnitDetails($defendingUnitId);
+
+        // Check if the attacking unit belongs to the current player
+        if ($attackingUnit['player_id'] != $player_id) {
+            throw new BgaUserException(self::_("You can only attack with your own units"));
+        }
+
+        // Check if the attacking unit is in formation or fortified
+        if (!$this->isUnitInFormation($attackingUnit) && !$attackingUnit['is_fortified']) {
+            throw new BgaUserException(self::_("The attacking unit must be in formation or fortified"));
+        }
+
+        // Check if units are orthogonally adjacent
+        if (!$this->areUnitsAdjacent($attackingUnit, $defendingUnit)) {
+            throw new BgaUserException(self::_("The units must be orthogonally adjacent"));
+        }
+
+        // Check if a fortified unit is being attacked by a non-fortified unit
+        if ($defendingUnit['is_fortified'] && !$attackingUnit['is_fortified']) {
+            throw new BgaUserException(self::_("A fortified unit can only be attacked by another fortified unit"));
+        }
+
+        // Move the defending unit to the reinforcement track
+        $this->moveUnitToReinforcementTrack($defendingUnit);
+
+        // Notify all players about the attack
+        self::notifyAllPlayers('unitAttacked', clienttranslate('${player_name} attacked ${defending_unit_type} with ${attacking_unit_type}'), [
+            'player_id' => $player_id,
+            'player_name' => self::getActivePlayerName(),
+            'attacking_unit_type' => $attackingUnit['type'],
+            'defending_unit_type' => $defendingUnit['type'],
+            'attacking_unit_id' => $attackingUnitId,
+            'defending_unit_id' => $defendingUnitId
+        ]);
+
+        // Decrease the action counter
+        $this->decreaseActionCounter();
+    }
+
+    private function getUnitDetails($unitId)
+    {
+        $sql = "SELECT * FROM units WHERE unit_id = '$unitId'";
+        return self::getObjectFromDB($sql);
+    }
+
+    private function isUnitInFormation($unit)
+    {
+        // Get adjacent units
+        $adjacentUnits = $this->getAdjacentUnits($unit);
+
+        // Check formation based on unit type
+        switch ($unit['type']) {
+            case 'battleship':
+                return $this->checkBattleshipFormation($unit, $adjacentUnits) !== null;
+            case 'infantry':
+                return $this->checkInfantryFormation($unit, $adjacentUnits) !== null;
+            case 'tank':
+                return $this->checkTankFormation($unit, $adjacentUnits) !== null;
+            default:
+                return false; // Unknown unit type
+        }
+    }
+
+    private function areUnitsAdjacent($unit1, $unit2)
+    {
+        $dx = abs($unit1['x'] - $unit2['x']);
+        $dy = abs($unit1['y'] - $unit2['y']);
+        return ($dx + $dy == 1);
+    }
+
+    private function moveUnitToReinforcementTrack($unit)
+    {
+        // Get the current state of the reinforcement track
+        $sql = "SELECT * FROM reinforcement_track ORDER BY position ASC";
+        $reinforcementTrack = self::getCollectionFromDb($sql);
+
+        // Move all units down one position
+        foreach ($reinforcementTrack as $position => $trackUnit) {
+            $newPosition = $position + 1;
+            if ($newPosition > 5) {
+                // Unit moves back to player's supply
+                $this->moveUnitToSupply($trackUnit);
+            } else {
+                $sql = "UPDATE reinforcement_track SET position = $newPosition WHERE unit_id = '{$trackUnit['unit_id']}'";
+                self::DbQuery($sql);
+            }
+        }
+
+        // Add the new unit to the top of the reinforcement track
+        $sql = "INSERT INTO reinforcement_track (unit_id, position, is_fortified) VALUES ('{$unit['unit_id']}', 1, {$unit['is_fortified']})";
+        self::DbQuery($sql);
+
+        // Remove the unit from the board
+        $sql = "DELETE FROM units WHERE unit_id = '{$unit['unit_id']}'";
+        self::DbQuery($sql);
+
+        // Notify clients about the reinforcement track update
+        self::notifyAllPlayers('reinforcementTrackUpdated', '', [
+            'reinforcementTrack' => $this->getReinforcementTrackState()
+        ]);
+    }
+
+    private function moveUnitToSupply($unit)
+    {
+        // Implement logic to move the unit back to the player's supply
+        // This might involve updating your database or game state
+        // For now, we'll just remove it from the reinforcement track
+        $sql = "DELETE FROM reinforcement_track WHERE unit_id = '{$unit['unit_id']}'";
+        self::DbQuery($sql);
+
+        // Notify clients about the unit returning to supply
+        self::notifyAllPlayers('unitReturnedToSupply', clienttranslate('A ${unit_type} has returned to ${player_name}\'s supply'), [
+            'unit_type' => $unit['type'],
+            'player_name' => self::getPlayerNameById($unit['player_id']),
+            'unit_id' => $unit['unit_id'],
+            'is_fortified' => $unit['is_fortified']
+        ]);
+    }
+
+    private function getReinforcementTrackState()
+    {
+        $sql = "SELECT * FROM reinforcement_track ORDER BY position ASC";
+        return self::getCollectionFromDb($sql);
+    }
+
+    private function decreaseActionCounter()
+    {
+        $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
+        $this->setGameStateValue('actionsRemaining', $actionsRemaining);
+
+        if ($actionsRemaining == 0) {
+            $this->gamestate->nextState('endTurn');
+        } else {
+            self::notifyAllPlayers('actionsRemaining', '', [
+                'actionsRemaining' => $actionsRemaining
+            ]);
+        }
     }
 
     protected function escapeString($string)

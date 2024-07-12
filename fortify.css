@@ -165,8 +165,12 @@
 }
 
 .unit.fortified {
-    border: 2px solid gold;
-    box-shadow: 0 0 10px gold;
+    filter: drop-shadow(2px 3px 5px gold);
+}
+
+.unit.highlight-target {
+    box-shadow: 0 0 10px 5px yellow;
+    cursor: pointer;
 }
 
 .highlighted{

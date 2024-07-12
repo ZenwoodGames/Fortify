@@ -111,4 +111,18 @@ class action_fortify extends APP_GameAction
 
     self::ajaxResponse();
   }
+
+  public function attack()
+  {
+    self::setAjaxMode();
+
+    // Retrieve arguments
+    $attackingUnitId = self::getArg("attackingUnitId", AT_alphanum, true);
+    $defendingUnitId = self::getArg("defendingUnitId", AT_alphanum, true);
+
+    // Call the attack method on the game instance
+    $this->game->attack($attackingUnitId, $defendingUnitId);
+
+    self::ajaxResponse();
+  }
 }

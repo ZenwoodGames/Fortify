@@ -44,3 +44,9 @@ CREATE TABLE IF NOT EXISTS `units` (
     `is_fortified` BOOLEAN NOT NULL DEFAULT FALSE
 );
 
+CREATE TABLE IF NOT EXISTS `reinforcement_track` (
+    `unit_id` VARCHAR(24) NOT NULL,
+    `position` INT NOT NULL,
+    `is_fortified` BOOLEAN NOT NULL DEFAULT FALSE,
+    PRIMARY KEY (`unit_id`)
+);

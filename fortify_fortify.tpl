@@ -49,11 +49,11 @@
                 </div>
                 <div id="reinforcement_track">
                     <!-- Reinforcement track slots -->
-                    <div class="reinforcement_slot"></div>
-                    <div class="reinforcement_slot"></div>
-                    <div class="reinforcement_slot"></div>
-                    <div class="reinforcement_slot"></div>
-                    <div class="reinforcement_slot heart_slot"></div>
+                    <div id="reinforcement_slot_1" class="reinforcement_slot"></div>
+                    <div id="reinforcement_slot_2" class="reinforcement_slot"></div>
+                    <div id="reinforcement_slot_3" class="reinforcement_slot"></div>
+                    <div id="reinforcement_slot_4" class="reinforcement_slot"></div>
+                    <div id="reinforcement_slot_5" class="reinforcement_slot heart_slot"></div>
                 </div>
             </div>
 
