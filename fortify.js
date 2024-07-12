@@ -101,7 +101,7 @@ define([
                     slot.appendChild(unitDiv);
                     unitDiv.style = "margin: 2px 0 0 7px;"
                 }
-                if(is_fortified)
+                if(is_fortified == 1)
                     this.updateToFortifiedUnit(unitDiv);
             },
 
