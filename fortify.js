@@ -841,9 +841,17 @@ define([
                 }
             },
 
-            updatePlayerSupply: function (playerId, unitType, isFortified) {
-                // Implement logic to update the player's supply in the UI
-                // This might involve adding a unit to the player's deck area
+            updatePlayerSupply: function (unit) {
+                
+                var deckId = 'player_deck_' + (unit.player_id == this.player_id ? 'bottom' : 'top');
+                var deck = $(deckId);
+                if (deck) {
+                    var unitDiv = this.createUnitDiv(unit.unit_id, unit.type, this.gamedatas.players[unit.player_id].color);
+                    if (unit.is_fortified == '1') {
+                        dojo.addClass(unitDiv, 'fortified');
+                    }
+                    dojo.place(unitDiv, deck);
+                }   
             },
 
             updateActionButtons: function (activeAction) {
@@ -1103,7 +1111,7 @@ define([
                     .replace('${player_name}', notif.args.player_name));
 
                 // Update the player's supply in the UI
-                this.updatePlayerSupply(notif.args.player_id, notif.args.unit_type, notif.args.is_fortified);
+                this.updatePlayerSupply(unit);
             },
 
             createUnitDiv: function (unitId, unitType, playerColor) {

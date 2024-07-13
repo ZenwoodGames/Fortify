@@ -765,8 +765,8 @@ class Fortify extends Table
         $sql = "UPDATE reinforcement_track SET position = position + 1 WHERE unit_id != '" . $unit['unit_id'] . "'";
         self::DbQuery($sql);
 
-        // Check if any unit has moved beyond position 5
-        $sql = "SELECT * FROM reinforcement_track WHERE position > 5";
+        // Check if any unit has moved to position 5
+        $sql = "SELECT * FROM reinforcement_track WHERE position = 5";
         $unitsToReturn = self::getCollectionFromDb($sql);
 
         foreach ($unitsToReturn as $unitToReturn) {
@@ -787,9 +787,11 @@ class Fortify extends Table
 
     private function moveUnitToSupply($unit)
     {
-        // Implement logic to move the unit back to the player's supply
-        // This might involve updating your database or game state
-        // For now, we'll just remove it from the reinforcement track
+        // Add the unit back to the units table
+        $sql = "INSERT INTO units (id, type, player_id, x, y, unit_id, is_fortified) 
+                VALUES (NULL, '{$unit['type']}', {$unit['player_id']}, NULL, NULL, '{$unit['unit_id']}', {$unit['is_fortified']})";
+        self::DbQuery($sql);
+
         $sql = "DELETE FROM reinforcement_track WHERE unit_id = '{$unit['unit_id']}'";
         self::DbQuery($sql);
 

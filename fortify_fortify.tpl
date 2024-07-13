@@ -4,9 +4,12 @@
     <!-- Player decks and reinforcement track -->
     <div id="player_area">
         <div id="player_deck_top" class="player_deck">
-            <div class="unit_deck infantry_deck"></div>
-            <div class="unit_deck battleship_deck"></div>
-            <div class="unit_deck tank_deck"></div>
+            <div id="infantry_deck" class="unit_deck infantry_deck"></div>
+            <div id="infantry_deck_fortified" class="unit_deck infantry_deck"></div>
+            <div id="battleship_deck" class="unit_deck battleship_deck"></div>
+            <div id="battleship_deck_fortified" class="unit_deck battleship_deck"></div>
+            <div id="tank_deck" class="unit_deck tank_deck"></div>
+            <div id="tank_deck_fortified" class="unit_deck tank_deck"></div>
         </div>
         <div id="action-counter"></div>
         <div id="board_container">
