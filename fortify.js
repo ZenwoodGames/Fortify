@@ -805,9 +805,9 @@ define([
             updateReinforcementTrack: function (reinforcementTrack) {
                 debugger;
                 // Clear existing units from reinforcement track
-                dojo.query('#reinforcement_track .reinforcement_slot').forEach(function (slot) {
-                    dojo.empty(slot);
-                });
+                //dojo.query('#reinforcement_track .reinforcement_slot').forEach(function (slot) {
+                //    dojo.empty(slot);
+                //});
 
                 // Move units to reinforcement track
                 for (var position in reinforcementTrack) {
