@@ -115,6 +115,9 @@ class Fortify extends Table
         $sql = "SELECT id, type, player_id, x, y, unit_id, is_fortified FROM units";
         $result['units'] = self::getObjectListFromDB($sql);
 
+        // Get reinforcement track data
+        $result['reinforcementTrack'] = $this->getReinforcementTrackState();
+
         // Initialize decks (example data)
         $result['decks'] = array(
             'bottom' => array(
@@ -693,6 +696,9 @@ class Fortify extends Table
         // Move the defending unit to the reinforcement track
         $this->moveUnitToReinforcementTrack($defendingUnit);
 
+        // Get the updated reinforcement track state
+        $updatedReinforcementTrack = $this->getReinforcementTrackState();
+
         // Notify all players about the attack
         self::notifyAllPlayers('unitAttacked', clienttranslate('${player_name} attacked ${defending_unit_type} with ${attacking_unit_type}'), [
             'player_id' => $player_id,
@@ -700,7 +706,8 @@ class Fortify extends Table
             'attacking_unit_type' => $attackingUnit['type'],
             'defending_unit_type' => $defendingUnit['type'],
             'attacking_unit_id' => $attackingUnitId,
-            'defending_unit_id' => $defendingUnitId
+            'defending_unit_id' => $defendingUnitId,
+            'reinforcementTrack' => $updatedReinforcementTrack
         ]);
 
         // Decrease the action counter
@@ -740,28 +747,36 @@ class Fortify extends Table
 
     private function moveUnitToReinforcementTrack($unit)
     {
-        // Get the current state of the reinforcement track
-        $sql = "SELECT * FROM reinforcement_track ORDER BY position ASC";
-        $reinforcementTrack = self::getCollectionFromDb($sql);
+        // Check if the unit is already in the reinforcement track
+        $sql = "SELECT * FROM reinforcement_track WHERE unit_id = '" . $unit['unit_id'] . "'";
+        $existingUnit = self::getObjectFromDB($sql);
 
-        // Move all units down one position
-        foreach ($reinforcementTrack as $position => $trackUnit) {
-            $newPosition = $position + 1;
-            if ($newPosition > 5) {
-                // Unit moves back to player's supply
-                $this->moveUnitToSupply($trackUnit);
-            } else {
-                $sql = "UPDATE reinforcement_track SET position = $newPosition WHERE unit_id = '{$trackUnit['unit_id']}'";
-                self::DbQuery($sql);
-            }
+        if ($existingUnit) {
+            // If the unit is already in the track, update its position
+            $sql = "UPDATE reinforcement_track SET position = 1, is_fortified = " . ($unit['is_fortified'] ? '1' : '0') . " WHERE unit_id = '" . $unit['unit_id'] . "'";
+            self::DbQuery($sql);
+        } else {
+            // If the unit is not in the track, insert it
+            $sql = "INSERT INTO reinforcement_track (unit_id, position, is_fortified) VALUES ('" . $unit['unit_id'] . "', 1, " . ($unit['is_fortified'] ? '1' : '0') . ")";
+            self::DbQuery($sql);
         }
 
-        // Add the new unit to the top of the reinforcement track
-        $sql = "INSERT INTO reinforcement_track (unit_id, position, is_fortified) VALUES ('{$unit['unit_id']}', 1, {$unit['is_fortified']})";
+        // Move all other units down one position
+        $sql = "UPDATE reinforcement_track SET position = position + 1 WHERE unit_id != '" . $unit['unit_id'] . "'";
         self::DbQuery($sql);
 
+        // Check if any unit has moved beyond position 5
+        $sql = "SELECT * FROM reinforcement_track WHERE position > 5";
+        $unitsToReturn = self::getCollectionFromDb($sql);
+
+        foreach ($unitsToReturn as $unitToReturn) {
+            $this->moveUnitToSupply($unitToReturn);
+            $sql = "DELETE FROM reinforcement_track WHERE unit_id = '" . $unitToReturn['unit_id'] . "'";
+            self::DbQuery($sql);
+        }
+
         // Remove the unit from the board
-        $sql = "DELETE FROM units WHERE unit_id = '{$unit['unit_id']}'";
+        $sql = "DELETE FROM units WHERE unit_id = '" . $unit['unit_id'] . "'";
         self::DbQuery($sql);
 
         // Notify clients about the reinforcement track update

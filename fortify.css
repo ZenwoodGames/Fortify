@@ -128,7 +128,7 @@
 }
 
 #player_deck_top {
-    background-color: #baf7dd;
+    background-color: #34d9a7;
     height: 100px;
     border-radius: 22px;
     width: 437px;
@@ -156,7 +156,7 @@
     margin: 0 -36px;
 }
 
-.selected{
+.selected {
     border-style: double;
     border-radius: 43px;
     border-width: thin;
@@ -169,11 +169,18 @@
 }
 
 .unit.highlight-target {
-    box-shadow: 0 0 10px 5px yellow;
+    box-shadow: 0 0 10px 5px red;
     cursor: pointer;
+    /* border: black; */
+    border-radius: 32px;
 }
 
-.highlighted{
+.unit.reinforcement {
+    top: 3px;
+    left: 5px;
+}
+
+.highlighted {
     background-color: yellow;
     opacity: 0.3;
 }
@@ -248,18 +255,19 @@
 #reinforcement_track {
     right: -5px;
     position: absolute;
-    top: 20px;
+    top: 15px;
 }
 
 .reinforcement_slot {
-    width: 50px;
-    height: 50px;
-    margin: 5px;
-    border: 1px solid #000;
+    width: 49px;
+    height: 68px;
+    /* margin: 5px; */
+    /* border: 1px solid #000; */
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-bottom: 28px;
+    margin-bottom: 11px;
+    top: 1px;
 }
 
 .heart_slot {
