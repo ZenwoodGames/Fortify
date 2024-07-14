@@ -688,7 +688,7 @@ define([
                 adjacentUnits.forEach(unit => {
                     if (unit.player_id !== this.player_id) {
                         // Check if the attacking unit is fortified or in formation
-                        if (attackingUnit.is_fortified || this.isUnitInFormation(attackingUnit)) {
+                        if (attackingUnit.is_fortified) {
                             // If the defending unit is fortified, only highlight if the attacking unit is also fortified
                             if (!unit.is_fortified || (unit.is_fortified && attackingUnit.is_fortified)) {
                                 this.highlightUnit(unit.unit_id);
@@ -698,20 +698,20 @@ define([
                 });
             },
 
-            isUnitInFormation: function (unit) {
-                var adjacentUnits = this.getAdjacentUnits(unit, false);
+            // isUnitInFormation: function (unit) {
+            //     var adjacentUnits = this.getAdjacentUnits(unit, false);
 
-                switch (unit.type) {
-                    case 'battleship':
-                        return this.checkBattleshipFormation(unit, adjacentUnits) !== null;
-                    case 'infantry':
-                        return this.checkInfantryFormation(unit, adjacentUnits) !== null;
-                    case 'tank':
-                        return this.checkTankFormation(unit, adjacentUnits) !== null;
-                    default:
-                        return false;
-                }
-            },
+            //     switch (unit.type) {
+            //         case 'battleship':
+            //             return this.checkBattleshipFormation(unit, adjacentUnits) !== null;
+            //         case 'infantry':
+            //             return this.checkInfantryFormation(unit, adjacentUnits) !== null;
+            //         case 'tank':
+            //             return this.checkTankFormation(unit, adjacentUnits) !== null;
+            //         default:
+            //             return false;
+            //     }
+            // },
 
             getAdjacentUnits: function (unit, isEnemyUnit) {
                 var adjacentUnits = [];
@@ -783,7 +783,7 @@ define([
                 // Remove highlights and click listeners from all units
                 dojo.query('.unit.highlight-target').forEach(unitElement => {
                     dojo.removeClass(unitElement, 'highlight-target');
-                    dojo.disconnect(unitElement, 'onclick');
+                    //dojo.disconnect(unitElement, 'onclick');
                 });
             },
 
@@ -842,8 +842,8 @@ define([
             },
 
             updatePlayerSupply: function (unit) {
-                
-                var deckId = 'player_deck_' + (unit.player_id == this.player_id ? 'bottom' : 'top');
+                var player_deck = $('player_deck_top'); 
+                var deckId = `${unit[unit_type]}_deck_` + (unit.player_id == this.player_id ? 'bottom' : 'top');
                 var deck = $(deckId);
                 if (deck) {
                     var unitDiv = this.createUnitDiv(unit.unit_id, unit.type, this.gamedatas.players[unit.player_id].color);
