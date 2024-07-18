@@ -328,7 +328,10 @@ class Fortify extends Table
             throw new BgaUserException(self::_("You have no more units of this type available"));
         }
 
-        if ($unitType == 'chopper' && $this->gamestate == '3') {
+        $this->serverLog("unitType", $unitType);
+        $this->serverLog("gamestate", $this->gamestate);
+
+        if ($unitType == 'chopper' && self::getGameStateValue('gameVariant') == 3) {
             // Check if the chopper is being enlisted on top of a friendly battleship
             $sql = "SELECT * FROM units WHERE x = $x AND y = $y AND type = 'battleship' AND player_id = $player_id";
             $battleship = self::getObjectFromDB($sql);
@@ -353,7 +356,8 @@ class Fortify extends Table
                 'x' => $x,
                 'y' => $y,
                 'unitId' => $unitId,
-                'player_color' => $player_color
+                'player_color' => $player_color,
+                'special_unit_id' => 'chopper_'.$player_color.'_000'
             ]);
 
         } else {
@@ -374,8 +378,7 @@ class Fortify extends Table
                 'x' => $x,
                 'y' => $y,
                 'unitId' => $unitId,
-                'player_color' => $player_color,
-                'special_unit_id' => 'chopper_'.$player_color.'_000'
+                'player_color' => $player_color
             ]);
         }
 
@@ -442,7 +445,7 @@ class Fortify extends Table
             throw new BgaUserException(self::_("Invalid move"));
         }
 
-        if ($unit['type'] == 'chopper' && $this->gamestate == 3) {
+        if ($unit['type'] == 'chopper' && self::getGameStateValue('gameVariant') == 3) {
             // Choppers can move anywhere
             $sql = "UPDATE units SET x = $toX, y = $toY WHERE unit_id = '$unitId'";
             self::DbQuery($sql);

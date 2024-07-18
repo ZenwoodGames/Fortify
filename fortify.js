@@ -95,7 +95,7 @@ define([
 
                 for (var i in gamedatas.units) {
                     var unit = gamedatas.units[i];
-
+                    debugger;
                     this.placeUnitOnBoard(unit.unit_id, unit.type, unit.x, unit.y, unit.player_id, unit.is_fortified);
                 }
 
@@ -121,7 +121,10 @@ define([
                 var slot = $('board_slot_' + x + '_' + y);
                 if (slot) {
                     slot.appendChild(unitDiv);
-                    unitDiv.style = "margin: 2px 0 0 7px;"
+                    if(unitType == 'chopper')
+                        unitDiv.style = "margin: 0 -75px";
+                    else
+                        unitDiv.style = "margin: 2px 0 0 7px";
                 }
                 if (is_fortified == 1)
                     this.updateToFortifiedUnit(unitDiv);
@@ -161,7 +164,7 @@ define([
             },
 
             handleUnitClick: function (event) {
-
+                debugger;
                 // Get the current player's color
                 var currentPlayerColor = this.playerColor;
 
@@ -287,10 +290,10 @@ define([
 
                 // Handle chopper enlist
                 if(this.selectedSpecialUnit.classList.contains('chopper')){
-                    if(this.selectedUnit.classList.contains('battleship')){
+                    if(this.selectedUnit && this.selectedUnit.classList.contains('battleship')){
                         this.finishEnlist(this.selectedSpecialUnit.classList[1],
                             slot.dataset.x, slot.dataset.y,
-                            this.selectedUnit.id);
+                            this.selectedSpecialUnit.id);
                         return;
                     }
                 }
@@ -315,12 +318,7 @@ define([
                 if (this.selectedUnit && this.isUnitOnBoard(this.selectedUnit)) {
                     // If slot is occupied and selected unit is friendly, then highlight movable slots
                     if (this.isSlotOccupied(slot)) {
-                        if (this.selectedUnit.classList.contains('chopper')) {
-                            // Highlight all spaces for chopper movement
-                            dojo.query('.board-slot').addClass('highlighted');
-                            return;
-                        }
-                        else if (this.getUnitDetails(this.selectedUnit).player_id == this.player_id) {
+                        if (this.getUnitDetails(this.selectedUnit).player_id == this.player_id) {
                             this.highlightValidMoves();
                             this.highlightValidTargets(this.getUnitDetails(this.selectedUnit));
                         }
@@ -335,6 +333,23 @@ define([
                             this.moveUnit(unitId, toX, toY);
                         }
                     }
+                }
+
+                if (this.selectedSpecialUnit && this.selectedSpecialUnit.classList.contains('chopper')) {
+                    // Selected a slot other than one occupied by chopper and does not contain another chopper
+                    if(this.selectedSpecialUnit.parentNode != slot && !event.target.classList.contains('chopper')){
+                        var toX = parseInt(event.currentTarget.dataset.x);
+                        var toY = parseInt(event.currentTarget.dataset.y);
+                        var unitId = this.selectedSpecialUnit.id;
+
+                        if (event.currentTarget.classList.contains('highlighted')) {
+                            this.moveUnit(unitId, toX, toY);
+                        }
+                    }else {
+                    // Highlight all valid spaces for chopper move
+                    dojo.query('.board-slot').addClass('highlighted');
+                    }
+                    return;
                 }
                 ////////////////////////////////////// End Move region //////////////////////////////////
 

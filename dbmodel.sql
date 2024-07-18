@@ -41,7 +41,9 @@ CREATE TABLE IF NOT EXISTS `units` (
     `x` INT NOT NULL,
     `y` INT NOT NULL,
     `unit_id` VARCHAR(24) NOT NULL,
-    `is_fortified` BOOLEAN NOT NULL DEFAULT FALSE
+    `is_fortified` BOOLEAN NOT NULL DEFAULT FALSE,
+    `is_occupied` INT NOT NULL DEFAULT 0,
+    `is_stacked` INT NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS `reinforcement_track` (
