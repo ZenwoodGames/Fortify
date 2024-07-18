@@ -112,6 +112,12 @@
     height: 100%;
 }
 
+.board-slot{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
 #units_container {
     position: absolute;
     top: 0;
@@ -274,4 +280,36 @@
     background-image: url('img/heart.png');
     /* Example image */
     background-size: cover;
+}
+
+.chopper.red {
+    background-image: url('img/chopper_red.png');
+}
+
+.chopper.red.fortified {
+    background-image: url('img/chopper_red_fortified.png');
+}
+
+.chopper.green {
+    background-image: url('img/chopper_green.png');
+}
+
+.chopper.green.fortified {
+    background-image: url('img/chopper_green_fortified.png');
+}
+
+.artillery.red {
+    background-image: url('img/artillery_red.png');
+}
+
+.artillery.red.fortified {
+    background-image: url('img/artillery_red_fortified.png');
+}
+
+.artillery.green {
+    background-image: url('img/artillery_green.png');
+}
+
+.artillery.green.fortified {
+    background-image: url('img/artillery_green_fortified.png');
 }

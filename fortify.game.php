@@ -36,7 +36,8 @@ class Fortify extends Table
         $this->initGameStateLabels(array(
             "actionsRemaining" => 10,
             "isFirstRound" => 11,
-            "isVeryFirstTurn" => 12
+            "isVeryFirstTurn" => 12,
+            "gameVariant" => 100
         ));
     }
 
@@ -162,6 +163,26 @@ class Fortify extends Table
             )
         );
 
+        // If the game variant is Special Warfare (3), add chopper and artillery units
+        if (self::getGameStateValue('gameVariant') == 3) {
+            $result['decks']['bottom']['chopper'] = array(
+                array('type' => 'chopper', 'player' => 'red')
+            );
+            $result['decks']['bottom']['artillery'] = array(
+                array('type' => 'artillery', 'player' => 'red')
+            );
+
+            $result['decks']['top']['chopper'] = array(
+                array('type' => 'chopper', 'player' => 'green')
+            );
+            $result['decks']['top']['artillery'] = array(
+                array('type' => 'artillery', 'player' => 'green')
+            );
+        }
+
+        // Game variant
+        $result['gameVariant'] = self::getGameStateValue('gameVariant');
+
         return $result;
     }
 
@@ -269,7 +290,7 @@ class Fortify extends Table
         }
 
         // Validate the unit type
-        $validUnitTypes = ['infantry', 'tank', 'battleship'];
+        $validUnitTypes = ['infantry', 'tank', 'battleship', 'chopper', 'artillery'];
         if (!in_array($unitType, $validUnitTypes)) {
             throw new BgaUserException(self::_("Invalid unit type"));
         }
@@ -292,10 +313,12 @@ class Fortify extends Table
         }
 
         // Check if the space is empty
-        $sql = "SELECT COUNT(*) FROM units WHERE x = $x AND y = $y";
-        $count = self::getUniqueValueFromDB($sql);
-        if ($count > 0) {
-            throw new BgaUserException(self::_("This space is already occupied"));
+        if ($unitType != 'chopper') {
+            $sql = "SELECT COUNT(*) FROM units WHERE x = $x AND y = $y";
+            $count = self::getUniqueValueFromDB($sql);
+            if ($count > 0) {
+                throw new BgaUserException(self::_("This space is already occupied"));
+            }
         }
 
         // Check if the player has available units of this type
@@ -305,24 +328,56 @@ class Fortify extends Table
             throw new BgaUserException(self::_("You have no more units of this type available"));
         }
 
-        // Add the unit to the board
-        $sql = "INSERT INTO units (type, player_id, x, y, unit_id) VALUES ('$unitType', $player_id, $x, $y, '$unitId')";
-        self::DbQuery($sql);
+        if ($unitType == 'chopper' && $this->gamestate == '3') {
+            // Check if the chopper is being enlisted on top of a friendly battleship
+            $sql = "SELECT * FROM units WHERE x = $x AND y = $y AND type = 'battleship' AND player_id = $player_id";
+            $battleship = self::getObjectFromDB($sql);
 
-        // Get the player's color
-        $players = self::loadPlayersBasicInfos();
-        $player_color = $players[$player_id]['player_color'];
+            if (!$battleship) {
+                throw new BgaUserException(self::_("Chopper can only be enlisted on top of a friendly battleship"));
+            }
 
-        // Notify all players about the new unit
-        self::notifyAllPlayers('unitEnlisted', clienttranslate('${player_name} enlists a ${unit_type} at (${x},${y})'), [
-            'player_id' => $player_id,
-            'player_name' => self::getActivePlayerName(),
-            'unit_type' => $unitType,
-            'x' => $x,
-            'y' => $y,
-            'unitId' => $unitId,
-            'player_color' => $player_color
-        ]);
+            // Add the chopper on top of the battleship
+            $sql = "INSERT INTO units (type, player_id, x, y, unit_id, is_stacked) VALUES ('chopper', $player_id, $x, $y, '$unitId', 1)";
+            self::DbQuery($sql);
+
+            // Update the battleship to show it's being occupied
+            $sql = "UPDATE units SET is_occupied = 1 WHERE unit_id = '{$battleship['unit_id']}'";
+            self::DbQuery($sql);
+
+            // Notify all players about the new unit
+            self::notifyAllPlayers('unitEnlisted', clienttranslate('${player_name} enlists a ${unit_type} at (${x},${y})'), [
+                'player_id' => $player_id,
+                'player_name' => self::getActivePlayerName(),
+                'unit_type' => $unitType,
+                'x' => $x,
+                'y' => $y,
+                'unitId' => $unitId,
+                'player_color' => $player_color
+            ]);
+
+        } else {
+
+            // Add the unit to the board
+            $sql = "INSERT INTO units (type, player_id, x, y, unit_id) VALUES ('$unitType', $player_id, $x, $y, '$unitId')";
+            self::DbQuery($sql);
+
+            // Get the player's color
+            $players = self::loadPlayersBasicInfos();
+            $player_color = $players[$player_id]['player_color'];
+
+            // Notify all players about the new unit
+            self::notifyAllPlayers('unitEnlisted', clienttranslate('${player_name} enlists a ${unit_type} at (${x},${y})'), [
+                'player_id' => $player_id,
+                'player_name' => self::getActivePlayerName(),
+                'unit_type' => $unitType,
+                'x' => $x,
+                'y' => $y,
+                'unitId' => $unitId,
+                'player_color' => $player_color,
+                'special_unit_id' => 'chopper_'.$player_color.'_000'
+            ]);
+        }
 
         // Decrease the action counter
         $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
@@ -387,20 +442,48 @@ class Fortify extends Table
             throw new BgaUserException(self::_("Invalid move"));
         }
 
-        // Perform the move
-        $sql = "UPDATE units SET x = $toX, y = $toY WHERE unit_Id = '$unitId'";
-        self::DbQuery($sql);
+        if ($unit['type'] == 'chopper' && $this->gamestate == 3) {
+            // Choppers can move anywhere
+            $sql = "UPDATE units SET x = $toX, y = $toY WHERE unit_id = '$unitId'";
+            self::DbQuery($sql);
 
-        // Notify all players about the move
-        self::notifyAllPlayers('unitMoved', clienttranslate('${player_name} moved a unit from (${fromX},${fromY}) to (${toX},${toY})'), [
-            'player_id' => $player_id,
-            'player_name' => self::getActivePlayerName(),
-            'unit_Id' => $unitId,
-            'fromX' => $fromX,
-            'fromY' => $fromY,
-            'toX' => $toX,
-            'toY' => $toY
-        ]);
+            // Check if there's a unit in the destination
+            $sql = "SELECT * FROM units WHERE x = $toX AND y = $toY AND unit_id != '$unitId'";
+            $occupiedUnit = self::getObjectFromDB($sql);
+
+            if ($occupiedUnit) {
+                // Stack the chopper on top of the unit
+                $sql = "UPDATE units SET is_stacked = 1 WHERE unit_id = '$unitId'";
+                self::DbQuery($sql);
+
+                // Mark the occupied unit as non-functional
+                $sql = "UPDATE units SET is_occupied = 1 WHERE unit_id = '{$occupiedUnit['unit_id']}'";
+                self::DbQuery($sql);
+            } else {
+                // If moving to an empty space, remove stacked status
+                $sql = "UPDATE units SET is_stacked = 0 WHERE unit_id = '$unitId'";
+                self::DbQuery($sql);
+            }
+
+            // Remove occupied status from the previous position
+            $sql = "UPDATE units SET is_occupied = 0 WHERE x = {$unit['x']} AND y = {$unit['y']} AND unit_id != '$unitId'";
+            self::DbQuery($sql);
+        } else {
+            // Perform the move
+            $sql = "UPDATE units SET x = $toX, y = $toY WHERE unit_Id = '$unitId'";
+            self::DbQuery($sql);
+
+            // Notify all players about the move
+            self::notifyAllPlayers('unitMoved', clienttranslate('${player_name} moved a unit from (${fromX},${fromY}) to (${toX},${toY})'), [
+                'player_id' => $player_id,
+                'player_name' => self::getActivePlayerName(),
+                'unit_Id' => $unitId,
+                'fromX' => $fromX,
+                'fromY' => $fromY,
+                'toX' => $toX,
+                'toY' => $toY
+            ]);
+        }
 
         // Decrease the action counter
         $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
@@ -686,6 +769,23 @@ class Fortify extends Table
         // Check if units are orthogonally adjacent
         if (!$this->areUnitsAdjacent($attackingUnit, $defendingUnit)) {
             throw new BgaUserException(self::_("The units must be orthogonally adjacent"));
+        }
+
+        if ($attackingUnit['type'] == 'chopper' && $this->gamestate == 3) {
+            // Check if the chopper is attacking the unit directly beneath it
+            if ($attackingUnit['x'] != $defendingUnit['x'] || $attackingUnit['y'] != $defendingUnit['y']) {
+                throw new BgaUserException(self::_("Chopper can only attack the unit directly beneath it"));
+            }
+
+            // Check if the defending unit is also a chopper
+            if ($defendingUnit['type'] == 'chopper') {
+                throw new BgaUserException(self::_("Choppers cannot attack other choppers"));
+            }
+        } elseif ($defendingUnit['type'] == 'chopper' && $this->gamestate == 3) {
+            // Choppers can't be attacked by other choppers
+            if ($attackingUnit['type'] == 'chopper') {
+                throw new BgaUserException(self::_("Choppers cannot attack other choppers"));
+            }
         }
 
         // Check if a fortified unit is being attacked by a non-fortified unit

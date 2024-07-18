@@ -1,1 +1,20 @@
-{}
+{
+    "100": {
+    "name": "Game Variant",
+    "values": {
+      "1": {
+        "name": "Learning",
+        "firstgameonly": true,
+        "tmdisplay": "Learning"
+      },
+      "2": {
+        "name": "Base"
+      },
+      "3": {
+        "name": "Special warfare",
+        "tmdisplay": "Special Warfare"
+      }
+    },
+    "default": 2
+  }
+}
