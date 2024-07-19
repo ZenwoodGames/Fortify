@@ -95,7 +95,6 @@ define([
 
                 for (var i in gamedatas.units) {
                     var unit = gamedatas.units[i];
-                    debugger;
                     this.placeUnitOnBoard(unit.unit_id, unit.type, unit.x, unit.y, unit.player_id, unit.is_fortified);
                 }
 
@@ -120,11 +119,17 @@ define([
                 // Move the unit to the correct position on the board
                 var slot = $('board_slot_' + x + '_' + y);
                 if (slot) {
-                    slot.appendChild(unitDiv);
-                    if(unitType == 'chopper')
-                        unitDiv.style = "margin: 0 -75px";
+                    if (unitType == 'chopper'){
+                        debugger;
+                        if(this.isSlotOccupied(slot))
+                            unitDiv.style = "margin: 0 -75px";
+                        else
+                            unitDiv.style = "margin: 2px 0 0 7px";
+                    }
                     else
                         unitDiv.style = "margin: 2px 0 0 7px";
+                    
+                    slot.appendChild(unitDiv);
                 }
                 if (is_fortified == 1)
                     this.updateToFortifiedUnit(unitDiv);
@@ -164,7 +169,7 @@ define([
             },
 
             handleUnitClick: function (event) {
-                debugger;
+
                 // Get the current player's color
                 var currentPlayerColor = this.playerColor;
 
@@ -231,7 +236,10 @@ define([
                     }
                     else {
                         // If unit is on the board, the unit can move/attack
-                        //this.highlightValidMoves();
+                        if (event.target.classList[1] == 'chopper') {
+                            this.highlightFriendlyBattleships();
+                            this.selectedSpecialUnit = event.target;
+                        }
                     }
 
                     // Deselect previously selected token
@@ -262,7 +270,7 @@ define([
             },
 
             handleSlotClick: function (event) {
-                debugger;
+
                 let slot;
                 if (this.isSlotOccupied(event.target))
                     slot = event.target.parentNode;
@@ -289,15 +297,15 @@ define([
                 }
 
                 // Handle chopper enlist
-                if(this.selectedSpecialUnit.classList.contains('chopper')){
-                    if(this.selectedUnit && this.selectedUnit.classList.contains('battleship')){
+                if (this.selectedSpecialUnit && (this.selectedSpecialUnit != this.selectedUnit) && this.selectedSpecialUnit.classList.contains('chopper')) {
+                    if (this.selectedUnit && this.selectedUnit.classList.contains('battleship')) {
                         this.finishEnlist(this.selectedSpecialUnit.classList[1],
                             slot.dataset.x, slot.dataset.y,
                             this.selectedSpecialUnit.id);
                         return;
                     }
                 }
-                
+
                 ////////////////////////////////////// End Enlist region //////////////////////////////////
 
                 /////////////////////////////////////////////////////////////////////////////////////////
@@ -325,29 +333,50 @@ define([
                     }
                     else {
                         // If slot is not occupied, move the token
-                        if (event.currentTarget.classList.contains('highlighted')) {
+                        if (this.selectedSpecialUnit.parentNode != slot && slot.classList.contains('highlighted')) {
                             var unitId = this.selectedUnit.id;
                             var toX = parseInt(event.currentTarget.dataset.x);
                             var toY = parseInt(event.currentTarget.dataset.y);
+                            var unitType = '';
 
-                            this.moveUnit(unitId, toX, toY);
+                            this.selectedSpecialUnit ? unitType = this.selectedSpecialUnit.classList[1] : this.selectedUnit.classList[1];
+
+                            this.moveUnit(unitId, unitType, toX, toY);
                         }
                     }
                 }
 
                 if (this.selectedSpecialUnit && this.selectedSpecialUnit.classList.contains('chopper')) {
                     // Selected a slot other than one occupied by chopper and does not contain another chopper
-                    if(this.selectedSpecialUnit.parentNode != slot && !event.target.classList.contains('chopper')){
+                    if (this.selectedSpecialUnit.parentNode != slot && !event.target.classList.contains('chopper')) {
                         var toX = parseInt(event.currentTarget.dataset.x);
                         var toY = parseInt(event.currentTarget.dataset.y);
                         var unitId = this.selectedSpecialUnit.id;
+                        var unitType = '';
 
+                        this.selectedSpecialUnit ? unitType = this.selectedSpecialUnit.classList[1] : this.selectedUnit.classList[1];
                         if (event.currentTarget.classList.contains('highlighted')) {
-                            this.moveUnit(unitId, toX, toY);
+                            this.moveUnit(unitId, unitType, toX, toY);
                         }
-                    }else {
-                    // Highlight all valid spaces for chopper move
-                    dojo.query('.board-slot').addClass('highlighted');
+                    } else {
+                        // Highlight all valid spaces for chopper move
+                        dojo.query('.board-slot').forEach(slot => {
+
+                            var slotChildren = Array.from(slot.children);
+                            var foundChild = slotChildren.filter(function (child) {
+
+                                if (child.classList.contains('chopper'))
+                                    return false;
+                                else
+                                    return true;
+                            });
+
+                            if (slotChildren && slotChildren.length > 0 && foundChild && foundChild.length > 0)
+                                return;
+                            else
+                                slot.classList.add('highlighted');
+                        });
+                        //.addClass('highlighted');
                     }
                     return;
                 }
@@ -588,8 +617,8 @@ define([
 
                 var friendlyBattleships = dojo.query('.battleship.' + this.playerColor);
                 friendlyBattleships.forEach(function (battleship) {
-                    if(battleship.parentNode.classList.contains('board-slot'))
-                    dojo.addClass(battleship.parentNode, 'highlighted');
+                    if (battleship.parentNode.classList.contains('board-slot'))
+                        dojo.addClass(battleship.parentNode, 'highlighted');
                 });
             },
 
@@ -650,7 +679,7 @@ define([
 
             isSlotOccupied: function (slot) {
 
-                if (slot.classList.contains("unit"))
+                if (slot.childElementCount > 0)
                     return true;
                 else
                     return false;
@@ -995,10 +1024,11 @@ define([
                 });
             },
 
-            moveUnit: function (unitId, toX, toY) {
+            moveUnit: function (unitId, unitType, toX, toY) {
                 if (this.checkAction('move')) {
                     this.ajaxcall("/fortify/fortify/move.html", {
                         unitId: unitId,
+                        unitType: unitType,
                         toX: toX,
                         toY: toY,
                         lock: true
@@ -1096,7 +1126,7 @@ define([
                 this.updateActionCounter(notif.args.actionsRemaining);
             },
             notif_unitEnlisted: function (notif) {
-                debugger;
+
                 console.log('Notification received: unitEnlisted', notif);
 
                 // Create or move the unit on the board
@@ -1107,7 +1137,7 @@ define([
                 var playerColor = notif.args.player_color;
                 var specialUnitId = notif.args.special_unit_id;
 
-                if(specialUnitId){
+                if (specialUnitId) {
                     unitId = specialUnitId;
                 }
 
@@ -1122,7 +1152,7 @@ define([
                 var slot = $('board_slot_' + x + '_' + y);
                 if (slot) {
                     slot.appendChild(unitDiv);
-                    if(specialUnitId)
+                    if (specialUnitId)
                         unitDiv.style.margin = "0 -75px";
                     else
                         unitDiv.style.margin = "2px 0 0 7px";
@@ -1140,11 +1170,18 @@ define([
             },
 
             notif_unitMoved: function (notif) {
-
+                debugger;
                 // Move the unit on the client side
                 var unit = $(notif.args.unit_Id);
                 var toSlot = $('board_slot_' + notif.args.toX + '_' + notif.args.toY);
+
                 if (unit && toSlot) {
+                    if (this.isSlotOccupied(toSlot)) {
+                        unit.style = "margin: 0px -75px";
+                    }
+                    else {
+                        unit.style = "margin: 2px 0px 0px 7px";
+                    }
                     toSlot.appendChild(unit);
                 }
 

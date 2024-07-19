@@ -90,11 +90,12 @@ class action_fortify extends APP_GameAction
 
     // Retrieve arguments
     $unitId = self::getArg("unitId", AT_alphanum, true);
+    $unitType = self::getArg("unitType", AT_alphanum, true);
     $toX = self::getArg("toX", AT_int, true);
     $toY = self::getArg("toY", AT_int, true);
 
     // Call the move method on the game instance
-    $this->game->move($unitId, $toX, $toY);
+    $this->game->move($unitId, $unitType, $toX, $toY);
 
     self::ajaxResponse();
   }

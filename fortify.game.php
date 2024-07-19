@@ -357,9 +357,8 @@ class Fortify extends Table
                 'y' => $y,
                 'unitId' => $unitId,
                 'player_color' => $player_color,
-                'special_unit_id' => 'chopper_'.$player_color.'_000'
+                'special_unit_id' => 'chopper_' . $player_color . '_000'
             ]);
-
         } else {
 
             // Add the unit to the board
@@ -421,7 +420,7 @@ class Fortify extends Table
         }
     }
 
-    function move($unitId, $toX, $toY)
+    function move($unitId, $unitType, $toX, $toY)
     {
         self::checkAction('move');
 
@@ -441,11 +440,11 @@ class Fortify extends Table
         $fromY = $unit['y'];
 
         // Check if the move is valid
-        if (!$this->isValidMove($player_color, $fromX, $fromY, $toX, $toY)) {
+        if ($unitType != 'chopper' && !$this->isValidMove($player_color, $fromX, $fromY, $toX, $toY)) {
             throw new BgaUserException(self::_("Invalid move"));
         }
 
-        if ($unit['type'] == 'chopper' && self::getGameStateValue('gameVariant') == 3) {
+        if ($unitType == 'chopper' && self::getGameStateValue('gameVariant') == 3) {
             // Choppers can move anywhere
             $sql = "UPDATE units SET x = $toX, y = $toY WHERE unit_id = '$unitId'";
             self::DbQuery($sql);
@@ -471,6 +470,17 @@ class Fortify extends Table
             // Remove occupied status from the previous position
             $sql = "UPDATE units SET is_occupied = 0 WHERE x = {$unit['x']} AND y = {$unit['y']} AND unit_id != '$unitId'";
             self::DbQuery($sql);
+
+            // Notify all players about the move
+            self::notifyAllPlayers('unitMoved', clienttranslate('${player_name} moved a unit from (${fromX},${fromY}) to (${toX},${toY})'), [
+                'player_id' => $player_id,
+                'player_name' => self::getActivePlayerName(),
+                'unit_Id' => $unitId,
+                'fromX' => $fromX,
+                'fromY' => $fromY,
+                'toX' => $toX,
+                'toY' => $toY
+            ]);
         } else {
             // Perform the move
             $sql = "UPDATE units SET x = $toX, y = $toY WHERE unit_Id = '$unitId'";
