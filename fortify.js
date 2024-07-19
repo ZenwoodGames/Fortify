@@ -120,7 +120,6 @@ define([
                 var slot = $('board_slot_' + x + '_' + y);
                 if (slot) {
                     if (unitType == 'chopper'){
-                        debugger;
                         if(this.isSlotOccupied(slot))
                             unitDiv.style = "margin: 0 -75px";
                         else
@@ -169,7 +168,7 @@ define([
             },
 
             handleUnitClick: function (event) {
-
+                debugger
                 // Get the current player's color
                 var currentPlayerColor = this.playerColor;
 
@@ -270,9 +269,9 @@ define([
             },
 
             handleSlotClick: function (event) {
-
+                debugger;
                 let slot;
-                if (this.isSlotOccupied(event.target))
+                if (event.target.classList.contains("unit") || this.isSlotOccupied(event.target))
                     slot = event.target.parentNode;
                 else
                     slot = event.target;
@@ -622,6 +621,39 @@ define([
                 });
             },
 
+            highlightValidUnitsForFortification() {
+                // Remove existing highlights
+                dojo.query('.unit.highlight-fortify').removeClass('highlight-fortify');
+            
+                // Highlight valid units for fortification
+                dojo.query('.unit.' + this.player_color).forEach(unit => {
+                    if (this.isValidForFortification(unit)) {
+                        dojo.addClass(unit, 'highlight-fortify');
+                    }
+                });
+            },
+
+            isValidForFortification(unit) {
+                if (dojo.hasClass(unit, 'chopper')) {
+                    // Special rule for Choppers
+                    var chopperSpace = unit.parentNode;
+                    var x = parseInt(chopperSpace.dataset.x);
+                    var y = parseInt(chopperSpace.dataset.y);
+            
+                    // Check the space below for a friendly fortified battleship
+                    var spaceBelow = dojo.query('.board-slot[data-x="' + x + '"][data-y="' + (y + 1) + '"]')[0];
+                    if (spaceBelow) {
+                        var battleshipBelow = dojo.query('.unit.battleship.' + this.player_color + '.fortified', spaceBelow)[0];
+                        return !!battleshipBelow;
+                    }
+                    return false;
+                } else {
+                    // For other unit types, use existing logic (assuming it's implemented)
+                    // This might involve checking for valid formations
+                    return this.checkValidFormation(unit);
+                }
+            },
+
             ///////////////////////////////////////////////////
             //// Player's action
 
@@ -657,6 +689,8 @@ define([
                     }, this, function (result) {
                         this.removeSlotHighlight();
                         this.removeUnitHighlight();
+                        this.selectedUnit = null;
+                        this.selectedSpecialUnit = null;
                     }, function (is_error) {
 
                         // What to do after the server call in any case
@@ -699,7 +733,7 @@ define([
                     this.fortifyMode = true;
                     dojo.addClass('btnFortify', 'active');
                     this.showMessage(_("Select a unit to fortify"), 'info');
-
+                    this.highlightValidUnitsForFortification
                     // Add click listeners to all units
                     // dojo.query('.unit').forEach(dojo.hitch(this, function(unitNode) {
                     //     dojo.connect(unitNode, 'onclick', this, 'onUnitClick');
@@ -1035,6 +1069,8 @@ define([
                     }, this, function (result) {
                         this.removeUnitHighlight();
                         this.removeSlotHighlight();
+                        this.selectedUnit = null;
+                        this.selectedSpecialUnit = null;
                     }
                         , function (is_error) {
                             console.log(is_error);
@@ -1043,18 +1079,18 @@ define([
                 }
             },
 
-            tryAttack: function (attackingUnitId, defendingUnitId) {
-                if (this.checkAction('attack')) {
-                    this.ajaxcall("/fortify/fortify/attack.html", {
-                        attackingUnitId: attackingUnitId,
-                        defendingUnitId: defendingUnitId,
-                        lock: true
-                    }, this, function (result) {
-                        // Handle successful attack
-                        this.clearSelection();
-                    });
-                }
-            },
+            // tryAttack: function (attackingUnitId, defendingUnitId) {
+            //     if (this.checkAction('attack')) {
+            //         this.ajaxcall("/fortify/fortify/attack.html", {
+            //             attackingUnitId: attackingUnitId,
+            //             defendingUnitId: defendingUnitId,
+            //             lock: true
+            //         }, this, function (result) {
+            //             // Handle successful attack
+            //             this.clearSelection();
+            //         });
+            //     }
+            // },
 
             removeButtonHighlight: function () {
                 let allActionButtons = document.querySelectorAll(".btn-active");
