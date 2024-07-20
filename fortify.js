@@ -119,15 +119,15 @@ define([
                 // Move the unit to the correct position on the board
                 var slot = $('board_slot_' + x + '_' + y);
                 if (slot) {
-                    if (unitType == 'chopper'){
-                        if(this.isSlotOccupied(slot))
+                    if (unitType == 'chopper') {
+                        if (this.isSlotOccupied(slot))
                             unitDiv.style = "margin: 0 -75px";
                         else
                             unitDiv.style = "margin: 2px 0 0 7px";
                     }
                     else
                         unitDiv.style = "margin: 2px 0 0 7px";
-                    
+
                     slot.appendChild(unitDiv);
                 }
                 if (is_fortified == 1)
@@ -236,7 +236,7 @@ define([
                     else {
                         // If unit is on the board, the unit can move/attack
                         if (event.target.classList[1] == 'chopper') {
-                            if(!this.fortifyMode)
+                            if (!this.fortifyMode)
                                 this.highlightFriendlyBattleships();
                             this.selectedSpecialUnit = event.target;
                         }
@@ -328,7 +328,10 @@ define([
                     if (this.isSlotOccupied(slot)) {
                         if (this.getUnitDetails(this.selectedUnit).player_id == this.player_id) {
                             this.highlightValidMoves();
-                            this.highlightValidTargets(this.getUnitDetails(this.selectedUnit));
+                            if (!this.selectedUnit.classList.contains('chopper'))
+                                this.highlightValidTargets(this.getUnitDetails(this.selectedUnit));
+                            else
+                                this.showMessage(_("A Chopper can only attack an enemy unit that is directly beneath it"), 'info');
                         }
                     }
                     else {
@@ -625,7 +628,7 @@ define([
             highlightValidUnitsForFortification() {
                 // Remove existing highlights
                 dojo.query('.unit.highlight-fortify').removeClass('highlight-fortify');
-            
+
                 // Highlight valid units for fortification
                 dojo.query('.unit.' + this.player_color).forEach(unit => {
                     debugger;
@@ -642,7 +645,7 @@ define([
                     var chopperSpace = unit.parentNode;
                     var x = parseInt(chopperSpace.dataset.x);
                     var y = parseInt(chopperSpace.dataset.y);
-            
+
                     // Check the space below for a friendly fortified battleship
                     var spaceBelow = dojo.query('.board-slot[data-x="' + x + '"][data-y="' + (y + 1) + '"]')[0];
                     if (spaceBelow) {
@@ -885,6 +888,8 @@ define([
                 if (unitElement.classList.contains('infantry')) return 'infantry';
                 if (unitElement.classList.contains('tank')) return 'tank';
                 if (unitElement.classList.contains('battleship')) return 'battleship';
+                if (unitElement.classList.contains('chopper')) return 'chopper';
+                if (unitElement.classList.contains('artillery')) return 'artillery';
                 return 'unknown';
             },
 
@@ -1007,42 +1012,37 @@ define([
                 var x = unit.x;
                 var y = unit.y;
 
-                // Highlight orthogonal adjacent empty spaces
-                var orthogonalDirections = [
-                    { dx: 0, dy: -1 }, // up
-                    { dx: 0, dy: 1 },  // down
-                    { dx: -1, dy: 0 }, // left
-                    { dx: 1, dy: 0 }   // right
-                ];
 
-                orthogonalDirections.forEach(dir => {
 
-                    var newX = x + dir.dx;
-                    var newY = y + dir.dy;
-                    var slotType = '';
-                    switch (unit.type) {
-                        case 'infantry':
-                        case 'tank':
-                            slotType = "land";
-                            break;
-                        case 'battleship':
-                            slotType = "water";
-                            break;
-                    }
-                    var slot = document.querySelector(`.board-slot[data-x="${newX}"][data-y="${newY}"]:is(.${slotType}, .shore)`);
-                    if (slot && !slot.hasChildNodes()) {
+                if (unit.type === 'chopper') {
+                    debugger;
+                    // For choppers, highlight all empty spaces
+                    document.querySelectorAll('.board-slot:not(:has(.unit))').forEach(slot => {
                         slot.classList.add('highlighted');
-                    }
-                });
+                    });
 
-                // Highlight spaces orthogonally adjacent to friendly units
-                var friendlyUnits = document.querySelectorAll(`.unit.${this.playerColor}`);
-                friendlyUnits.forEach(unit => {
-                    var unitX = parseInt(unit.parentNode.dataset.x);
-                    var unitY = parseInt(unit.parentNode.dataset.y);
+                    // Highlight enemy battleships not occupied by choppers
+                    document.querySelectorAll(`.unit.battleship:not(.${this.playerColor})`).forEach(battleship => {
+                        let battleshipSlot = battleship.closest('.board-slot');
+                        let chopperOnBattleship = battleshipSlot ? battleshipSlot.querySelector('.unit.chopper') : null;
+                        if (!chopperOnBattleship) {
+                            battleshipSlot ? battleshipSlot.classList.add('highlighted') : null;
+                        }
+                    });
+                }
+                else {
+                    // Highlight orthogonal adjacent empty spaces
+                    var orthogonalDirections = [
+                        { dx: 0, dy: -1 }, // up
+                        { dx: 0, dy: 1 },  // down
+                        { dx: -1, dy: 0 }, // left
+                        { dx: 1, dy: 0 }   // right
+                    ];
+
                     orthogonalDirections.forEach(dir => {
-                        var newX = unitX + dir.dx;
-                        var newY = unitY + dir.dy;
+
+                        var newX = x + dir.dx;
+                        var newY = y + dir.dy;
                         var slotType = '';
                         switch (unit.type) {
                             case 'infantry':
@@ -1054,11 +1054,37 @@ define([
                                 break;
                         }
                         var slot = document.querySelector(`.board-slot[data-x="${newX}"][data-y="${newY}"]:is(.${slotType}, .shore)`);
-                        if (slot && !slot.hasChildNodes() && (newX !== x || newY !== y)) {
+                        if (slot && !slot.hasChildNodes()) {
                             slot.classList.add('highlighted');
                         }
                     });
-                });
+
+
+                    // Highlight spaces orthogonally adjacent to friendly units
+                    var friendlyUnits = document.querySelectorAll(`.unit.${this.playerColor}`);
+                    friendlyUnits.forEach(unit => {
+                        var unitX = parseInt(unit.parentNode.dataset.x);
+                        var unitY = parseInt(unit.parentNode.dataset.y);
+                        orthogonalDirections.forEach(dir => {
+                            var newX = unitX + dir.dx;
+                            var newY = unitY + dir.dy;
+                            var slotType = '';
+                            switch (unit.type) {
+                                case 'infantry':
+                                case 'tank':
+                                    slotType = "land";
+                                    break;
+                                case 'battleship':
+                                    slotType = "water";
+                                    break;
+                            }
+                            var slot = document.querySelector(`.board-slot[data-x="${newX}"][data-y="${newY}"]:is(.${slotType}, .shore)`);
+                            if (slot && !slot.hasChildNodes() && (newX !== x || newY !== y)) {
+                                slot.classList.add('highlighted');
+                            }
+                        });
+                    });
+                }
             },
 
             moveUnit: function (unitId, unitType, toX, toY) {

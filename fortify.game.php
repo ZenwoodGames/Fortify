@@ -617,12 +617,6 @@ class Fortify extends Table
 
     private function checkChopperFormation($chopper)
     {
-        // Fetch the selected unit from the database
-        // $sql = "SELECT unit_id, x, y, type, player_id FROM units 
-        //         WHERE x = " . self::escapeString($centerUnit['x']) . 
-        //         "AND y = " . self::escapeString($centerUnit['y']);
-        // $unit = self::getObjectFromDB($sql);
-
         // Check if there's a friendly fortified battleship below
         $battleshipBelow = $this->getUnitAtPosition($chopper['x'], $chopper['y'], 'battleship');
         if (
