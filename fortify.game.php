@@ -607,10 +607,37 @@ class Fortify extends Table
                 return $this->checkInfantryFormation($centerUnit, $adjacentUnits);
             case 'tank':
                 return $this->checkTankFormation($centerUnit, $adjacentUnits);
+            case 'chopper':
+                return $this->checkChopperFormation($centerUnit);
             default:
                 $this->serverLog("Unknown unit type", $centerUnit['type']);
                 return null;
         }
+    }
+
+    private function checkChopperFormation($chopper)
+    {
+        // Fetch the selected unit from the database
+        // $sql = "SELECT unit_id, x, y, type, player_id FROM units 
+        //         WHERE x = " . self::escapeString($centerUnit['x']) . 
+        //         "AND y = " . self::escapeString($centerUnit['y']);
+        // $unit = self::getObjectFromDB($sql);
+
+        // Check if there's a friendly fortified battleship below
+        $battleshipBelow = $this->getUnitAtPosition($chopper['x'], $chopper['y'], 'battleship');
+        if (
+            !$battleshipBelow || $battleshipBelow['type'] !== 'battleship' ||
+            $battleshipBelow['player_id'] != $chopper['player_id'] || !$battleshipBelow['is_fortified']
+        ) {
+            throw new BgaUserException(self::_("Chopper must be above a friendly fortified Battleship to fortify"));
+        }
+        return $battleshipBelow;
+    }
+
+    private function getUnitAtPosition($x, $y, $unitType)
+    {
+        $sql = "SELECT * FROM units WHERE x = $x AND y = $y AND type = " . self::escapeString($unitType);
+        return self::getObjectFromDB($sql);
     }
 
     private function checkBattleshipFormation($centerUnit, $adjacentUnits)

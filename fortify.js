@@ -236,7 +236,8 @@ define([
                     else {
                         // If unit is on the board, the unit can move/attack
                         if (event.target.classList[1] == 'chopper') {
-                            this.highlightFriendlyBattleships();
+                            if(!this.fortifyMode)
+                                this.highlightFriendlyBattleships();
                             this.selectedSpecialUnit = event.target;
                         }
                     }
@@ -627,6 +628,7 @@ define([
             
                 // Highlight valid units for fortification
                 dojo.query('.unit.' + this.player_color).forEach(unit => {
+                    debugger;
                     if (this.isValidForFortification(unit)) {
                         dojo.addClass(unit, 'highlight-fortify');
                     }
@@ -634,6 +636,7 @@ define([
             },
 
             isValidForFortification(unit) {
+                debugger;
                 if (dojo.hasClass(unit, 'chopper')) {
                     // Special rule for Choppers
                     var chopperSpace = unit.parentNode;
@@ -733,7 +736,7 @@ define([
                     this.fortifyMode = true;
                     dojo.addClass('btnFortify', 'active');
                     this.showMessage(_("Select a unit to fortify"), 'info');
-                    this.highlightValidUnitsForFortification
+                    this.highlightValidUnitsForFortification();
                     // Add click listeners to all units
                     // dojo.query('.unit').forEach(dojo.hitch(this, function(unitNode) {
                     //     dojo.connect(unitNode, 'onclick', this, 'onUnitClick');
