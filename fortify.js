@@ -212,26 +212,37 @@ define([
 
                     // If unit is not on board, then only possible move is enlist
                     if (!this.isUnitOnBoard(this.selectedUnit)) {
-                        switch (event.target.classList[1]) {
-                            case 'battleship':
-                                const waterSlot = document.querySelectorAll('.water');
-                                waterSlot.forEach(slot => {
-                                    slot.classList.add('highlighted');
-                                });
-                                break;
-                            case 'infantry':
-                            case 'tank':
-                                const landSlot = document.querySelectorAll('.land');
-                                landSlot.forEach(slot => {
-                                    slot.classList.add('highlighted');
-                                });
+                        debugger;
 
-                                break;
-                            case 'chopper':
-                                this.highlightFriendlyBattleships();
-                                this.selectedSpecialUnit = event.target;
-                                break;
+                        if (this.selectedUnit.classList[1] == 'chopper') {
+                            this.highlightFriendlyBattleships();
+                            this.selectedSpecialUnit = event.target;
                         }
+                        else {
+                            dojo.query('.shore').forEach(shore => {
+                                dojo.addClass(shore.id, 'highlighted')
+                            });
+                        }
+                        // switch (event.target.classList[1]) {
+                        //     case 'battleship':
+                        //         const waterSlot = document.querySelectorAll('.water');
+                        //         waterSlot.forEach(slot => {
+                        //             slot.classList.add('highlighted');
+                        //         });
+                        //         break;
+                        //     case 'infantry':
+                        //     case 'tank':
+                        //         const landSlot = document.querySelectorAll('.land');
+                        //         landSlot.forEach(slot => {
+                        //             slot.classList.add('highlighted');
+                        //         });
+
+                        //         break;
+                        //     case 'chopper':
+                        //         this.highlightFriendlyBattleships();
+                        //         this.selectedSpecialUnit = event.target;
+                        //         break;
+                        // }
                     }
                     else {
                         // If unit is on the board, the unit can move/attack
@@ -299,7 +310,7 @@ define([
                 // Handle chopper enlist
                 if (this.selectedSpecialUnit && (this.selectedSpecialUnit != this.selectedUnit) && this.selectedSpecialUnit.classList.contains('chopper')) {
                     if (this.selectedUnit && this.selectedUnit.classList.contains('battleship')) {
-                        if(this.isUnitOnBoard(this.selectedSpecialUnit)){
+                        if (this.isUnitOnBoard(this.selectedSpecialUnit)) {
                             // If slot is not occupied, move the token
                             if (this.selectedSpecialUnit.parentNode != slot) {
                                 var unitId = this.selectedSpecialUnit.id;
@@ -312,11 +323,11 @@ define([
                                 this.moveUnit(unitId, unitType, toX, toY);
                             }
                         }
-                        else{
+                        else {
                             this.finishEnlist(this.selectedSpecialUnit.classList[1],
-                            slot.dataset.x, slot.dataset.y,
-                            this.selectedSpecialUnit.id);    
-                        }                        
+                                slot.dataset.x, slot.dataset.y,
+                                this.selectedSpecialUnit.id);
+                        }
                         return;
                     }
                 }
@@ -634,10 +645,15 @@ define([
             highlightFriendlyBattleships: function () {
 
                 var friendlyBattleships = dojo.query('.battleship.' + this.playerColor);
-                friendlyBattleships.forEach(function (battleship) {
-                    if (battleship.parentNode.classList.contains('board-slot'))
-                        dojo.addClass(battleship.parentNode, 'highlighted');
-                });
+                if (friendlyBattleships && friendlyBattleships > 0) {
+                    friendlyBattleships.forEach(function (battleship) {
+                        if (battleship.parentNode.classList.contains('board-slot'))
+                            dojo.addClass(battleship.parentNode, 'highlighted');
+                    });
+                }
+                else {
+                    this.showMessage(_("No friendly battleship available to enlist."), 'info');
+                }
             },
 
             highlightValidUnitsForFortification() {
@@ -1041,7 +1057,7 @@ define([
 
                     // Highlight enemy battleships not occupied by choppers
                     document.querySelectorAll(`.unit.battleship:not(.${this.playerColor})`).forEach(battleship => {
-                        if(this.isUnitOnBoard(battleship) && !battleship.parentNode.querySelector('.unit.chopper')){
+                        if (this.isUnitOnBoard(battleship) && !battleship.parentNode.querySelector('.unit.chopper')) {
                             battleship.parentNode.classList.add('highlighted')
                         }
                         //let battleshipSlot = battleship.closest('.board-slot');
