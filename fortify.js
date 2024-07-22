@@ -212,16 +212,47 @@ define([
 
                     // If unit is not on board, then only possible move is enlist
                     if (!this.isUnitOnBoard(this.selectedUnit)) {
-                        debugger;
-
                         if (this.selectedUnit.classList[1] == 'chopper') {
                             this.highlightFriendlyBattleships();
                             this.selectedSpecialUnit = event.target;
                         }
                         else {
-                            dojo.query('.shore').forEach(shore => {
-                                dojo.addClass(shore.id, 'highlighted')
-                            });
+                            debugger;
+                            var friendlyUnits = document.querySelectorAll(`.board-slot > .unit.${this.playerColor}`);
+                            if(friendlyUnits && friendlyUnits.length > 0){
+                                // Set to store unique adjacent units
+                                const adjacentUnits = new Set();
+                                
+                                // Directions for orthogonal adjacency
+                                const directions = [
+                                    {dx: -1, dy: 0},  // Left
+                                    {dx: 1, dy: 0},   // Right
+                                    {dx: 0, dy: -1},  // Up
+                                    {dx: 0, dy: 1}    // Down
+                                ];
+                                
+                                friendlyUnits.forEach(unit => {
+                                    // Get the x and y coordinates of the friendly unit
+                                    const boardSlot = unit.closest('.board-slot');
+                                    const [x, y] = boardSlot.id.split('_').slice(-2).map(Number);
+                                    
+                                    // Check each orthogonal direction
+                                    directions.forEach(({dx, dy}) => {
+                                        const adjacentSlot = document.getElementById(`board_slot_${x + dx}_${y + dy}`);
+                                        if (adjacentSlot) {
+                                            const adjacentUnit = adjacentSlot.querySelector(`.unit:not(.${this.playerColor})`);
+                                            if (!adjacentUnit) {
+                                                adjacentSlot.classList.add('highlighted');
+                                            }
+                                        }
+                                    });
+                                });
+                            }
+                            else{
+                                dojo.query('.shore').forEach(shore => {
+                                    dojo.addClass(shore.id, 'highlighted')
+                                });
+                            }
                         }
                         // switch (event.target.classList[1]) {
                         //     case 'battleship':
@@ -277,6 +308,9 @@ define([
                     // shoreSpaces.forEach(space => {
                     //     space.classList.add('highlighted');
                     // });
+                }
+                else{
+                    this.showMessage(_("This is not your turn"), 'info');
                 }
             },
 
