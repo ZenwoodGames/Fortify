@@ -422,6 +422,8 @@ class Fortify extends Table
 
     function move($unitId, $unitType, $toX, $toY)
     {
+        $this->serverLog("Entered move action", "");
+
         self::checkAction('move');
 
         $player_id = self::getActivePlayerId();
@@ -444,6 +446,8 @@ class Fortify extends Table
             throw new BgaUserException(self::_("Invalid move"));
         }
 
+        $this->serverLog("gameVariant", self::getGameStateValue('gameVariant'));
+
         if ($unitType == 'chopper' && self::getGameStateValue('gameVariant') == 3) {
             // Choppers can move anywhere
             $sql = "UPDATE units SET x = $toX, y = $toY WHERE unit_id = '$unitId'";
@@ -453,10 +457,15 @@ class Fortify extends Table
             $sql = "SELECT * FROM units WHERE x = $toX AND y = $toY AND unit_id != '$unitId'";
             $occupiedUnit = self::getObjectFromDB($sql);
 
+            $this->serverLog("occupiedUnit sql", $sql);
+
             if ($occupiedUnit) {
+                $this->serverLog("has occupiedUnit", $occupiedUnit);
                 // Stack the chopper on top of the unit
                 $sql = "UPDATE units SET is_stacked = 1 WHERE unit_id = '$unitId'";
                 self::DbQuery($sql);
+
+                $this->serverLog("updated is_stacked = 1", "");
 
                 // Mark the occupied unit as non-functional
                 $sql = "UPDATE units SET is_occupied = 1 WHERE unit_id = '{$occupiedUnit['unit_id']}'";

@@ -299,9 +299,24 @@ define([
                 // Handle chopper enlist
                 if (this.selectedSpecialUnit && (this.selectedSpecialUnit != this.selectedUnit) && this.selectedSpecialUnit.classList.contains('chopper')) {
                     if (this.selectedUnit && this.selectedUnit.classList.contains('battleship')) {
-                        this.finishEnlist(this.selectedSpecialUnit.classList[1],
+                        if(this.isUnitOnBoard(this.selectedSpecialUnit)){
+                            // If slot is not occupied, move the token
+                            if (this.selectedSpecialUnit.parentNode != slot) {
+                                var unitId = this.selectedSpecialUnit.id;
+                                var toX = parseInt(event.currentTarget.dataset.x);
+                                var toY = parseInt(event.currentTarget.dataset.y);
+                                var unitType = '';
+
+                                this.selectedSpecialUnit ? unitType = this.selectedSpecialUnit.classList[1] : this.selectedUnit.classList[1];
+
+                                this.moveUnit(unitId, unitType, toX, toY);
+                            }
+                        }
+                        else{
+                            this.finishEnlist(this.selectedSpecialUnit.classList[1],
                             slot.dataset.x, slot.dataset.y,
-                            this.selectedSpecialUnit.id);
+                            this.selectedSpecialUnit.id);    
+                        }                        
                         return;
                     }
                 }
@@ -363,22 +378,22 @@ define([
                         }
                     } else {
                         // Highlight all valid spaces for chopper move
-                        dojo.query('.board-slot').forEach(slot => {
+                        // dojo.query('.board-slot').forEach(slot => {
 
-                            var slotChildren = Array.from(slot.children);
-                            var foundChild = slotChildren.filter(function (child) {
+                        //     var slotChildren = Array.from(slot.children);
+                        //     var foundChild = slotChildren.filter(function (child) {
 
-                                if (child.classList.contains('chopper'))
-                                    return false;
-                                else
-                                    return true;
-                            });
+                        //         if (child.classList.contains('chopper'))
+                        //             return false;
+                        //         else
+                        //             return true;
+                        //     });
 
-                            if (slotChildren && slotChildren.length > 0 && foundChild && foundChild.length > 0)
-                                return;
-                            else
-                                slot.classList.add('highlighted');
-                        });
+                        //     if (slotChildren && slotChildren.length > 0 && foundChild && foundChild.length > 0)
+                        //         return;
+                        //     else
+                        //         slot.classList.add('highlighted');
+                        // });
                         //.addClass('highlighted');
                     }
                     return;
@@ -774,7 +789,12 @@ define([
                         dojo.removeClass('btnFortify', 'active');
                         this.fortifyMode = false;
                     }, function (is_error) {
-                        // Error handling
+                        if (is_error) {
+                            this.removeUnitHighlight();
+                            this.removeSlotHighlight();
+                            dojo.removeClass('btnFortify', 'active');
+                            this.fortifyMode = false;
+                        }
                     });
                 }
             },
@@ -1012,8 +1032,6 @@ define([
                 var x = unit.x;
                 var y = unit.y;
 
-
-
                 if (unit.type === 'chopper') {
                     debugger;
                     // For choppers, highlight all empty spaces
@@ -1023,11 +1041,14 @@ define([
 
                     // Highlight enemy battleships not occupied by choppers
                     document.querySelectorAll(`.unit.battleship:not(.${this.playerColor})`).forEach(battleship => {
-                        let battleshipSlot = battleship.closest('.board-slot');
-                        let chopperOnBattleship = battleshipSlot ? battleshipSlot.querySelector('.unit.chopper') : null;
-                        if (!chopperOnBattleship) {
-                            battleshipSlot ? battleshipSlot.classList.add('highlighted') : null;
+                        if(this.isUnitOnBoard(battleship) && !battleship.parentNode.querySelector('.unit.chopper')){
+                            battleship.parentNode.classList.add('highlighted')
                         }
+                        //let battleshipSlot = battleship.closest('.board-slot');
+                        //let chopperOnBattleship = battleship ? battleship.querySelector('.unit.chopper') : null;
+                        //if (!chopperOnBattleship) {
+                        //    battleshipSlot ? battleshipSlot.classList.add('highlighted') : null;
+                        //}
                     });
                 }
                 else {
