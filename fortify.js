@@ -242,7 +242,20 @@ define([
                                         if (adjacentSlot) {
                                             const adjacentUnit = adjacentSlot.querySelector(`.unit:not(.${this.playerColor})`);
                                             if (!adjacentUnit) {
-                                                adjacentSlot.classList.add('highlighted');
+                                                debugger;
+                                                switch (this.selectedUnit.classList[1]) {
+                                                    case 'infantry':
+                                                    case 'tank':
+                                                        if (adjacentSlot.classList.contains('shore') || adjacentSlot.classList.contains('land')) {
+                                                            adjacentSlot.classList.add('highlighted');
+                                                        }
+                                                        break;
+                                                    case 'battleship':
+                                                        if (adjacentSlot.classList.contains('shore') || adjacentSlot.classList.contains('water')) {
+                                                            adjacentSlot.classList.add('highlighted');
+                                                        }
+                                                        break;
+                                                }
                                             }
                                         }
                                     });
@@ -375,8 +388,19 @@ define([
 
                 if (this.isSlotOccupied(slot)) {
                     if (this.selectedUnit && event.target != this.selectedUnit) {
+                        if(this.selectedSpecialUnit){
+                            var unitId = this.selectedSpecialUnit.id;
+                            var toX = parseInt(event.currentTarget.dataset.x);
+                            var toY = parseInt(event.currentTarget.dataset.y);
+                            var unitType = '';
 
-                        this.attack(this.selectedUnit.id, event.target.id);
+                            this.selectedSpecialUnit ? unitType = this.selectedSpecialUnit.classList[1] : this.selectedUnit.classList[1];
+
+                            this.moveUnit(unitId, unitType, toX, toY);
+                        }
+                        else{
+                            this.attack(this.selectedUnit.id, event.target.id);
+                        }
                     }
                 }
 
@@ -391,8 +415,9 @@ define([
                             this.highlightValidMoves();
                             if (!this.selectedUnit.classList.contains('chopper'))
                                 this.highlightValidTargets(this.getUnitDetails(this.selectedUnit));
-                            else
-                                this.showMessage(_("A Chopper can only attack an enemy unit that is directly beneath it"), 'info');
+                            else{
+                                // this.showMessage(_("A Chopper can only attack an enemy unit that is directly beneath it"), 'info');
+                            }
                         }
                     }
                     else {
@@ -678,11 +703,10 @@ define([
 
             // Add this new function to highlight friendly battleships
             highlightFriendlyBattleships: function () {
-
-                var friendlyBattleships = dojo.query('.battleship.' + this.playerColor);
-                if (friendlyBattleships && friendlyBattleships > 0) {
+                debugger;
+                var friendlyBattleships = dojo.query('.board-slot > .battleship.' + this.playerColor);
+                if (friendlyBattleships && friendlyBattleships.length > 0) {
                     friendlyBattleships.forEach(function (battleship) {
-                        if (battleship.parentNode.classList.contains('board-slot'))
                             dojo.addClass(battleship.parentNode, 'highlighted');
                     });
                 }

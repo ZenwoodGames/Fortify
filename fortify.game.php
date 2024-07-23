@@ -649,6 +649,12 @@ class Fortify extends Table
         $this->serverLog("Center Unit", $centerUnit);
         $this->serverLog("Adjacent Units", $adjacentUnits);
 
+        // Check if the center unit is a single Battleship on a Shore space
+        if ($this->isBattleshipOnShore($centerUnit)) {
+            $this->serverLog("Single Battleship on Shore space - can fortify", $centerUnit);
+            return [$centerUnit]; // Return the single Battleship as a valid formation
+        }
+
         $battleships = array_filter($adjacentUnits, function ($unit) {
             return $unit['type'] == 'battleship';
         });
@@ -708,6 +714,42 @@ class Fortify extends Table
 
         $this->serverLog("No valid formation found", "");
         return null;
+    }
+
+    // New helper function to check if a Battleship is on a Shore space
+    private function isBattleshipOnShore($unit)
+    {
+        // Check if the unit is a Battleship
+        if ($unit['type'] !== 'battleship') {
+            return false;
+        }
+
+        // Get the space type for the unit's position
+        $spaceType = $this->getSpaceType($unit['x'], $unit['y']);
+
+        // Check if the space is a Shore space
+        return $spaceType === 'shore';
+    }
+
+    // Helper function to get the space type (you may need to implement this based on your game board structure)
+    private function getSpaceType($x, $y)
+    {
+        // Implement the logic to determine the space type (water, land, or shore) based on coordinates
+        // This is a placeholder implementation - adjust according to your game board structure
+        // For example, you might have a board array or database table with this information
+
+        $shoreSpaces = [
+            [0, 3], [1, 2], [2, 1], [3, 0],
+        ];
+
+        foreach ($shoreSpaces as $space) {
+            if ($space[0] == $x && $space[1] == $y) {
+                return 'shore';
+            }
+        }
+
+        // Default to 'water' if not found in shore spaces
+        return 'water';
     }
 
     private function checkInfantryFormation($centerUnit, $adjacentUnits)
