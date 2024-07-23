@@ -16,13 +16,10 @@
         <div id="action-counter"></div>
         <div id="board_container">
             <div class="action-menu">
-                <button class="action-button" id="btnMove">MOVE</button>
-                <button class="action-button" id="btnAttack">ATTACK</button>
+                <!--<button class="action-button" id="btnMove">MOVE</button>-->
                 <button class="action-button" id="btnFortify">FORTIFY</button>
-                <button class="action-button" id="btnEnlist">ENLIST</button>
-            </div>
-            <div>
-                <button class="action-button" id="btnEndVolley">END VOLLEY</button>
+                <button class="action-button" id="btnAttack" style="display: none;">ATTACK</button>
+                <!--<button class="action-button" id="btnEnlist">ENLIST</button>-->
             </div>
             <div id="board">
                 <div id="slots_container">
@@ -64,14 +61,14 @@
 
         </div>
         <div id="player_deck_bottom" class="player_deck">
-        <div id="infantry_deck" class="unit_deck infantry_deck"></div>
-        <div id="infantry_deck_fortified" class="unit_deck infantry_deck"></div>
-        <div id="battleship_deck" class="unit_deck battleship_deck"></div>
-        <div id="battleship_deck_fortified" class="unit_deck battleship_deck"></div>
-        <div id="tank_deck" class="unit_deck tank_deck"></div>
-        <div id="tank_deck_fortified" class="unit_deck tank_deck"></div>
-        <div id="chopper_deck" class="unit_deck chopper_deck"></div>
-        <div id="artillery_deck_fortified" class="unit_deck artillery_deck"></div>
+            <div id="infantry_deck" class="unit_deck infantry_deck"></div>
+            <div id="infantry_deck_fortified" class="unit_deck infantry_deck"></div>
+            <div id="battleship_deck" class="unit_deck battleship_deck"></div>
+            <div id="battleship_deck_fortified" class="unit_deck battleship_deck"></div>
+            <div id="tank_deck" class="unit_deck tank_deck"></div>
+            <div id="tank_deck_fortified" class="unit_deck tank_deck"></div>
+            <div id="chopper_deck" class="unit_deck chopper_deck"></div>
+            <div id="artillery_deck_fortified" class="unit_deck artillery_deck"></div>
         </div>
 
     </div>

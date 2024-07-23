@@ -852,11 +852,11 @@ class Fortify extends Table
         }
 
         // Check if units are orthogonally adjacent
-        if (!$this->areUnitsAdjacent($attackingUnit, $defendingUnit)) {
+        if ($attackingUnit['type'] != 'chopper' && !$this->areUnitsAdjacent($attackingUnit, $defendingUnit)) {
             throw new BgaUserException(self::_("The units must be orthogonally adjacent"));
         }
 
-        if ($attackingUnit['type'] == 'chopper' && $this->gamestate == 3) {
+        if ($attackingUnit['type'] == 'chopper') {
             // Check if the chopper is attacking the unit directly beneath it
             if ($attackingUnit['x'] != $defendingUnit['x'] || $attackingUnit['y'] != $defendingUnit['y']) {
                 throw new BgaUserException(self::_("Chopper can only attack the unit directly beneath it"));
@@ -866,7 +866,7 @@ class Fortify extends Table
             if ($defendingUnit['type'] == 'chopper') {
                 throw new BgaUserException(self::_("Choppers cannot attack other choppers"));
             }
-        } elseif ($defendingUnit['type'] == 'chopper' && $this->gamestate == 3) {
+        } elseif ($defendingUnit['type'] == 'chopper') {
             // Choppers can't be attacked by other choppers
             if ($attackingUnit['type'] == 'chopper') {
                 throw new BgaUserException(self::_("Choppers cannot attack other choppers"));
