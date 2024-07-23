@@ -249,7 +249,8 @@ define([
                                 });
                             }
                             else{
-                                dojo.query('.shore').forEach(shore => {
+                                dojo.query('.shore:not(:has(.unit))').forEach(shore => {
+                                    debugger;
                                     dojo.addClass(shore.id, 'highlighted')
                                 });
                             }
