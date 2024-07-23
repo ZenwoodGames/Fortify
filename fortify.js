@@ -219,25 +219,25 @@ define([
                         else {
                             debugger;
                             var friendlyUnits = document.querySelectorAll(`.board-slot > .unit.${this.playerColor}`);
-                            if(friendlyUnits && friendlyUnits.length > 0){
+                            if (friendlyUnits && friendlyUnits.length > 0) {
                                 // Set to store unique adjacent units
                                 const adjacentUnits = new Set();
-                                
+
                                 // Directions for orthogonal adjacency
                                 const directions = [
-                                    {dx: -1, dy: 0},  // Left
-                                    {dx: 1, dy: 0},   // Right
-                                    {dx: 0, dy: -1},  // Up
-                                    {dx: 0, dy: 1}    // Down
+                                    { dx: -1, dy: 0 },  // Left
+                                    { dx: 1, dy: 0 },   // Right
+                                    { dx: 0, dy: -1 },  // Up
+                                    { dx: 0, dy: 1 }    // Down
                                 ];
-                                
+
                                 friendlyUnits.forEach(unit => {
                                     // Get the x and y coordinates of the friendly unit
                                     const boardSlot = unit.closest('.board-slot');
                                     const [x, y] = boardSlot.id.split('_').slice(-2).map(Number);
-                                    
+
                                     // Check each orthogonal direction
-                                    directions.forEach(({dx, dy}) => {
+                                    directions.forEach(({ dx, dy }) => {
                                         const adjacentSlot = document.getElementById(`board_slot_${x + dx}_${y + dy}`);
                                         if (adjacentSlot) {
                                             const adjacentUnit = adjacentSlot.querySelector(`.unit:not(.${this.playerColor})`);
@@ -255,13 +255,18 @@ define([
                                                             adjacentSlot.classList.add('highlighted');
                                                         }
                                                         break;
+                                                    case 'artillery':
+                                                        if (adjacentSlot.classList.contains('land')) {
+                                                            adjacentSlot.classList.add('highlighted');
+                                                        }
+                                                        break;
                                                 }
                                             }
                                         }
                                     });
                                 });
                             }
-                            else{
+                            else {
                                 dojo.query('.shore:not(:has(.unit))').forEach(shore => {
                                     debugger;
                                     dojo.addClass(shore.id, 'highlighted')
@@ -296,19 +301,19 @@ define([
                                 //this.highlightFriendlyBattleships();
                                 this.selectedSpecialUnit = event.target;
                             }
-                            if(this.selectedSpecialUnit && this.selectedSpecialUnit.parentNode.children.length > 1){
+                            if (this.selectedSpecialUnit && this.selectedSpecialUnit.parentNode.children.length > 1) {
                                 dojo.style($('btnAttack'), 'display', 'block');
                             }
-                            else{
+                            else {
                                 dojo.style($('btnAttack'), 'display', 'none');
                             }
-                            if (!this.fortifyMode){
-                                
+                            if (!this.fortifyMode) {
+
                                 this.highlightFriendlyBattleships();
                             }
-                            else{
+                            else {
                                 // Unhide attack button if a unit is available on the bottom of the chopper
-                                
+
                             }
                             this.selectedSpecialUnit = event.target;
                         }
@@ -339,7 +344,7 @@ define([
                     //     space.classList.add('highlighted');
                     // });
                 }
-                else{
+                else {
                     this.showMessage(_("This is not your turn"), 'info');
                 }
             },
@@ -404,7 +409,7 @@ define([
 
                 if (this.isSlotOccupied(slot)) {
                     if (this.selectedUnit && event.target != this.selectedUnit) {
-                        if(this.selectedSpecialUnit){
+                        if (this.selectedSpecialUnit) {
                             var unitId = this.selectedSpecialUnit.id;
                             var toX = parseInt(event.currentTarget.dataset.x);
                             var toY = parseInt(event.currentTarget.dataset.y);
@@ -414,7 +419,7 @@ define([
 
                             this.moveUnit(unitId, unitType, toX, toY);
                         }
-                        else{
+                        else {
                             this.attack(this.selectedUnit.id, event.target.id);
                         }
                     }
@@ -431,7 +436,7 @@ define([
                             this.highlightValidMoves();
                             if (!this.selectedUnit.classList.contains('chopper'))
                                 this.highlightValidTargets(this.getUnitDetails(this.selectedUnit));
-                            else{
+                            else {
                                 // this.showMessage(_("A Chopper can only attack an enemy unit that is directly beneath it"), 'info');
                             }
                         }
@@ -448,7 +453,7 @@ define([
 
                             this.moveUnit(unitId, unitType, toX, toY);
                         }
-                        else{
+                        else {
                             var unitId = this.selectedUnit.id;
                             var toX = parseInt(event.currentTarget.dataset.x);
                             var toY = parseInt(event.currentTarget.dataset.y);
@@ -733,7 +738,7 @@ define([
                 var friendlyBattleships = dojo.query('.board-slot > .battleship.' + this.playerColor);
                 if (friendlyBattleships && friendlyBattleships.length > 0) {
                     friendlyBattleships.forEach(function (battleship) {
-                            dojo.addClass(battleship.parentNode, 'highlighted');
+                        dojo.addClass(battleship.parentNode, 'highlighted');
                     });
                 }
                 else {
@@ -926,7 +931,7 @@ define([
                 var siblings = Array.from(parentSlot.children);
                 var chopperIndex = siblings.indexOf(this.selectedSpecialUnit);
                 var elementAbove;
-                
+
                 if (chopperIndex > 0) {
                     elementAbove = siblings[chopperIndex - 1];
                 }
@@ -1059,7 +1064,7 @@ define([
                     lock: true
                 }, this, function (result) {
                     this.selectedSpecialUnit ? dojo.style(this.selectedSpecialUnit, 'margin', '2px 0px 0px 7px;') : null;
-                    
+
                     this.removeUnitHighlight();
                     this.removeSlotHighlight();
                     this.selectedUnit = null;
@@ -1420,7 +1425,7 @@ define([
 
                 // Update the reinforcement track
                 debugger;
-                if(notif.args.attacking_unit_type == 'chopper'){
+                if (notif.args.attacking_unit_type == 'chopper') {
                     dojo.style($(notif.args.attacking_unit_id), 'margin', '2px 0px 0px 7px;');
                 }
 
