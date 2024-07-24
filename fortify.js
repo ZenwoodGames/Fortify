@@ -67,6 +67,7 @@ define([
                     dojo.style($('player_deck_bottom'), 'width', '600px');
                 }
 
+                debugger;
                 // Initialize the game board
                 this.initBoard(gamedatas);
 
@@ -125,9 +126,16 @@ define([
                         else
                             unitDiv.style = "margin: 2px 0 0 7px";
                     }
-                    else
-                        unitDiv.style = "margin: 2px 0 0 7px";
-
+                    else{
+                        if (this.isSlotOccupied(slot)){
+                            // Chopper already got attached
+                            slot.firstChild.style = "margin: 0 -75px";
+                            unitDiv.style = "margin: 2px 0 0 7px";
+                            slot.insertBefore(unitDiv, slot.firstChild);
+                            return;
+                        }
+                        unitDiv.style = "margin: 2px 0 0 7px";                        
+                    }
                     slot.appendChild(unitDiv);
                 }
                 if (is_fortified == 1)
@@ -236,11 +244,12 @@ define([
                                     const boardSlot = unit.closest('.board-slot');
                                     const [x, y] = boardSlot.id.split('_').slice(-2).map(Number);
 
+                                    // Check if slot contains chopper - the bottom unit will be disabled
                                     // Check each orthogonal direction
                                     directions.forEach(({ dx, dy }) => {
                                         const adjacentSlot = document.getElementById(`board_slot_${x + dx}_${y + dy}`);
                                         if (adjacentSlot) {
-                                            const adjacentUnit = adjacentSlot.querySelector(`.unit:not(.${this.playerColor})`);
+                                            const adjacentUnit = adjacentSlot.querySelector('.unit');
                                             if (!adjacentUnit) {
                                                 debugger;
                                                 switch (this.selectedUnit.classList[1]) {
@@ -256,7 +265,7 @@ define([
                                                         }
                                                         break;
                                                     case 'artillery':
-                                                        if (adjacentSlot.classList.contains('land')) {
+                                                        if (!adjacentSlot.hasChildNodes() && adjacentSlot.classList.contains('land')) {
                                                             adjacentSlot.classList.add('highlighted');
                                                         }
                                                         break;
@@ -268,7 +277,6 @@ define([
                             }
                             else {
                                 dojo.query('.shore:not(:has(.unit))').forEach(shore => {
-                                    debugger;
                                     dojo.addClass(shore.id, 'highlighted')
                                 });
                             }
@@ -368,7 +376,7 @@ define([
                 /////////////////////////////////////////////////////////////////////////////////////////
                 // If unit is selected and is not on the board, then it is an enlist
                 if (this.selectedUnit && !this.isUnitOnBoard(this.selectedUnit)) {
-                    if (!this.isSlotOccupied(slot)) {
+                    if (!this.isSlotOccupied(slot) && slot.classList.contains('highlighted')) {
                         this.finishEnlist(this.selectedUnit.classList[1],
                             slot.dataset.x, slot.dataset.y,
                             this.selectedUnit.id);
@@ -502,34 +510,34 @@ define([
                 }
                 ////////////////////////////////////// End Move region //////////////////////////////////
 
-                switch (this.gameState) {
-                    case 'moving':
-                        var toX = parseInt(event.currentTarget.dataset.x);
-                        var toY = parseInt(event.currentTarget.dataset.y);
-                        var unitId = this.selectedUnit.id;
+                // switch (this.gameState) {
+                //     case 'moving':
+                //         var toX = parseInt(event.currentTarget.dataset.x);
+                //         var toY = parseInt(event.currentTarget.dataset.y);
+                //         var unitId = this.selectedUnit.id;
 
-                        if (event.currentTarget.classList.contains('highlighted')) {
-                            this.moveUnit(unitId, toX, toY);
-                        }
-                        break;
-                    case 'firstEnlisting':
-                    case 'enlist':
-                        if (!this.isSlotOccupied(event.target)) {
-                            this.finishEnlist(this.selectedUnit.classList[1],
-                                event.target.dataset.x, event.target.dataset.y,
-                                this.selectedUnit.id);
+                //         if (event.currentTarget.classList.contains('highlighted')) {
+                //             this.moveUnit(unitId, toX, toY);
+                //         }
+                //         break;
+                //     case 'firstEnlisting':
+                //     case 'enlist':
+                //         if (!this.isSlotOccupied(event.target)) {
+                //             this.finishEnlist(this.selectedUnit.classList[1],
+                //                 event.target.dataset.x, event.target.dataset.y,
+                //                 this.selectedUnit.id);
 
-                            // this.selectedUnit.classList.remove("selected");
-                            // this.selectedUnit.style = "margin: 2px 0 0 7px;"
-                            // event.target.appendChild(this.selectedUnit);
-                        }
-                        else {
-                            // Remove unit selection
-                            //this.removeUnitHighlight();
-                            //this.removeSlotHighlight();
-                        }
-                        break;
-                }
+                //             // this.selectedUnit.classList.remove("selected");
+                //             // this.selectedUnit.style = "margin: 2px 0 0 7px;"
+                //             // event.target.appendChild(this.selectedUnit);
+                //         }
+                //         else {
+                //             // Remove unit selection
+                //             //this.removeUnitHighlight();
+                //             //this.removeSlotHighlight();
+                //         }
+                //         break;
+                // }
                 // this.selectedUnit = '';
                 // this.removeSlotHighlight();
             },
@@ -861,10 +869,9 @@ define([
                     dojo.addClass('btnFortify', 'active');
                     this.showMessage(_("Select a unit to fortify"), 'info');
                     this.highlightValidUnitsForFortification();
-                    // Add click listeners to all units
-                    // dojo.query('.unit').forEach(dojo.hitch(this, function(unitNode) {
-                    //     dojo.connect(unitNode, 'onclick', this, 'onUnitClick');
-                    // }));
+
+                    this.removeSlotHighlight();
+                    this.clearHighlights();
                 } else {
                     this.exitFortifyMode();
                 }
@@ -1151,11 +1158,11 @@ define([
                 var selectedUnit = this.selectedUnit;
                 if (!selectedUnit) return;
 
-                let unit = this.getUnitDetails(selectedUnit);
-                var x = unit.x;
-                var y = unit.y;
+                let selectedUnitDetails = this.getUnitDetails(selectedUnit);
+                var x = selectedUnitDetails.x;
+                var y = selectedUnitDetails.y;
 
-                if (unit.type === 'chopper') {
+                if (selectedUnitDetails.type === 'chopper') {
                     debugger;
                     // For choppers, highlight all empty spaces
                     document.querySelectorAll('.board-slot:not(:has(.unit))').forEach(slot => {
@@ -1200,7 +1207,7 @@ define([
                         var newX = x + dir.dx;
                         var newY = y + dir.dy;
                         var slotType = '';
-                        switch (unit.type) {
+                        switch (selectedUnitDetails.type) {
                             case 'infantry':
                             case 'tank':
                                 slotType = "land";
@@ -1225,7 +1232,7 @@ define([
                             var newX = unitX + dir.dx;
                             var newY = unitY + dir.dy;
                             var slotType = '';
-                            switch (unit.classList[1]) {
+                            switch (selectedUnitDetails.type) {
                                 case 'infantry':
                                 case 'tank':
                                     slotType = "land";

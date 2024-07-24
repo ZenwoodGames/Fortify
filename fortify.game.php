@@ -491,6 +491,11 @@ class Fortify extends Table
                 'toY' => $toY
             ]);
         } else {
+            // Check if player has enough actions
+            if ($unitType == 'artillery' && $this->getGameStateValue('actionsRemaining') < 2) {
+                throw new BgaUserException(self::_("Artillery requires 2 actions to move"));
+            }
+
             // Perform the move
             $sql = "UPDATE units SET x = $toX, y = $toY WHERE unit_Id = '$unitId'";
             self::DbQuery($sql);
@@ -507,9 +512,16 @@ class Fortify extends Table
             ]);
         }
 
-        // Decrease the action counter
-        $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
-        $this->setGameStateValue('actionsRemaining', $actionsRemaining);
+        if ($unitType == 'artillery') {
+            // Artillery consumes 2 actions for a move
+            $actionsRemaining = 0;
+            $this->setGameStateValue('actionsRemaining', $actionsRemaining);
+        } else {
+            // Decrease the action counter
+            $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
+            $this->setGameStateValue('actionsRemaining', $actionsRemaining);
+        }
+
 
         if ($actionsRemaining == 0) {
             $this->gamestate->nextState('endTurn');
@@ -554,7 +566,7 @@ class Fortify extends Table
         $player_id = self::getActivePlayerId();
 
         // Fetch the selected unit from the database
-        $sql = "SELECT unit_id, x, y, type, player_id FROM units WHERE unit_id = " . self::escapeString($unitId);
+        $sql = "SELECT unit_id, x, y, type, player_id, is_fortified FROM units WHERE unit_id = " . self::escapeString($unitId);
         $unit = self::getObjectFromDB($sql);
 
         $this->serverLog("Selected unit", $unit);
@@ -565,6 +577,10 @@ class Fortify extends Table
 
         if ($unit['player_id'] != $player_id) {
             throw new BgaUserException(self::_("You can only fortify your own units"));
+        }
+
+        if ($unit['type'] == 'artillery' && $this->getGameStateValue('actionsRemaining') < 2) {
+            throw new BgaUserException(self::_("Artillery requires 2 actions to fortify"));
         }
 
         // Get adjacent units
@@ -592,9 +608,15 @@ class Fortify extends Table
             'unit' => $unit
         ]);
 
-        // Decrease the action counter
-        $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
-        $this->setGameStateValue('actionsRemaining', $actionsRemaining);
+        if ($unit['type'] == 'artillery') {
+            // Artillery consumes 2 actions for a fortification
+            $actionsRemaining = 0;
+            $this->setGameStateValue('actionsRemaining', $actionsRemaining);
+        } else {
+            // Decrease the action counter
+            $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
+            $this->setGameStateValue('actionsRemaining', $actionsRemaining);
+        }
 
         if ($actionsRemaining == 0) {
             $this->gamestate->nextState('endTurn');
@@ -652,21 +674,123 @@ class Fortify extends Table
         // Check if the center unit is a single Battleship on a Shore space
         if ($this->isBattleshipOnShore($centerUnit)) {
             $this->serverLog("Single Battleship on Shore space - can fortify", $centerUnit);
-            return [$centerUnit]; // Return the single Battleship as a valid formation
+            return [$centerUnit];
         }
 
-        $battleships = array_filter($adjacentUnits, function ($unit) {
-            return $unit['type'] == 'battleship';
+        // Get all battleships in a wider area (including fortified ones)
+        $allNearbyBattleships = $this->getNearbyBattleships($centerUnit);
+        $this->serverLog("All Nearby Battleships", $allNearbyBattleships);
+
+        // Add the center unit to the nearby battleships list
+        array_unshift($allNearbyBattleships, $centerUnit);
+        $this->serverLog("All Battleships including center", $allNearbyBattleships);
+
+        // Check for formation with at least one fortified battleship
+        $fortifiedFormation = $this->checkFormationWithFortifiedBattleships($centerUnit, $allNearbyBattleships);
+        if ($fortifiedFormation !== null) {
+            $this->serverLog("Valid formation with fortified battleships found", $fortifiedFormation);
+            return $fortifiedFormation;
+        }
+
+        $this->serverLog("No valid formation found", "");
+        return null;
+    }
+
+    private function checkFormationWithFortifiedBattleships($centerUnit, $nearbyBattleships)
+    {
+        $centerX = intval($centerUnit['x']);
+        $centerY = intval($centerUnit['y']);
+
+        $this->serverLog("Checking formation with center at ($centerX, $centerY)", "");
+
+        // Sort battleships by x coordinate
+        usort($nearbyBattleships, function ($a, $b) {
+            return intval($a['x']) - intval($b['x']);
         });
 
-        $this->serverLog("Filtered Battleships", $battleships);
+        // Check for three consecutive battleships in a row
+        for ($i = 0; $i < count($nearbyBattleships) - 2; $i++) {
+            $first = $nearbyBattleships[$i];
+            $second = $nearbyBattleships[$i + 1];
+            $third = $nearbyBattleships[$i + 2];
 
-        if (count($battleships) < 2) {
-            $this->serverLog("Not enough adjacent battleships", count($battleships));
-            return null;
+            if (
+                intval($first['x']) + 1 == intval($second['x']) &&
+                intval($second['x']) + 1 == intval($third['x']) &&
+                $first['y'] == $second['y'] && $second['y'] == $third['y']
+            ) {
+
+                // Check if at least one of them is fortified
+                if ($first['is_fortified'] == '1' || $second['is_fortified'] == '1' || $third['is_fortified'] == '1') {
+                    $this->serverLog("Valid horizontal formation found", [$first, $second, $third]);
+                    return [$first, $second, $third];
+                }
+            }
         }
 
-        // Convert string coordinates to integers
+        // Check vertical formation (unchanged)
+        $topUnit = $this->findBattleshipAtPosition($nearbyBattleships, $centerX, $centerY - 1);
+        $bottomUnit = $this->findBattleshipAtPosition($nearbyBattleships, $centerX, $centerY + 1);
+        $this->serverLog("Top Unit", $topUnit);
+        $this->serverLog("Bottom Unit", $bottomUnit);
+
+        if ($topUnit && $bottomUnit) {
+            $this->serverLog("Found vertical units", "");
+            if ($topUnit['is_fortified'] == '1' || $bottomUnit['is_fortified'] == '1' || $centerUnit['is_fortified'] == '1') {
+                $this->serverLog("Valid vertical formation found", [$topUnit, $centerUnit, $bottomUnit]);
+                return [$topUnit, $centerUnit, $bottomUnit];
+            } else {
+                $this->serverLog("Vertical formation found but not fortified", "");
+            }
+        } else {
+            $this->serverLog("No valid vertical formation", "");
+        }
+
+        $this->serverLog("No valid formation with fortified battleships found", "");
+        return null;
+    }
+
+    private function getNearbyBattleships($centerUnit)
+    {
+        $sql = "SELECT unit_id, x, y, type, is_fortified FROM units 
+            WHERE player_id = " . self::escapeString($centerUnit['player_id']) . "
+            AND type = 'battleship'
+            AND ((ABS(x - " . $centerUnit['x'] . ") <= 2 AND ABS(y - " . $centerUnit['y'] . ") <= 2)
+            AND NOT (x = " . $centerUnit['x'] . " AND y = " . $centerUnit['y'] . "))";
+        $result = self::getObjectListFromDB($sql);
+        $this->serverLog("getNearbyBattleships SQL", $sql);
+        $this->serverLog("getNearbyBattleships result", $result);
+        return $result;
+    }
+
+    private function areUnitsInLine($unit1, $unit2, $unit3)
+    {
+        $x1 = intval($unit1['x']);
+        $y1 = intval($unit1['y']);
+        $x2 = intval($unit2['x']);
+        $y2 = intval($unit2['y']);
+        $x3 = intval($unit3['x']);
+        $y3 = intval($unit3['y']);
+
+        // Check if all units are in the same row
+        if ($y1 == $y2 && $y2 == $y3) {
+            $xValues = [$x1, $x2, $x3];
+            sort($xValues);
+            return ($xValues[2] - $xValues[0] == 2) && ($xValues[1] - $xValues[0] == 1);
+        }
+
+        // Check if all units are in the same column
+        if ($x1 == $x2 && $x2 == $x3) {
+            $yValues = [$y1, $y2, $y3];
+            sort($yValues);
+            return ($yValues[2] - $yValues[0] == 2) && ($yValues[1] - $yValues[0] == 1);
+        }
+
+        return false;
+    }
+
+    private function checkThreeBattleshipFormation($centerUnit, $nearbyBattleships)
+    {
         $centerX = intval($centerUnit['x']);
         $centerY = intval($centerUnit['y']);
 
@@ -675,44 +799,34 @@ class Fortify extends Table
             [[$centerX - 1, $centerY], [$centerX + 1, $centerY]],
             // Vertical
             [[$centerX, $centerY - 1], [$centerX, $centerY + 1]],
-            // L-shape (4 possibilities)
-            [[$centerX, $centerY - 1], [$centerX + 1, $centerY - 1]],
-            [[$centerX, $centerY - 1], [$centerX - 1, $centerY - 1]],
-            [[$centerX, $centerY + 1], [$centerX + 1, $centerY + 1]],
-            [[$centerX, $centerY + 1], [$centerX - 1, $centerY + 1]],
-            [[$centerX - 1, $centerY], [$centerX - 1, $centerY + 1]],
-            [[$centerX - 1, $centerY], [$centerX - 1, $centerY - 1]],
-            [[$centerX + 1, $centerY], [$centerX + 1, $centerY + 1]],
-            [[$centerX + 1, $centerY], [$centerX + 1, $centerY - 1]]
         ];
 
-        foreach ($formations as $index => $formation) {
-            $this->serverLog("Checking formation", $index);
-            $valid = true;
+        foreach ($formations as $formation) {
             $potentialFormation = [$centerUnit];
             foreach ($formation as $position) {
-                $found = false;
-                foreach ($battleships as $battleship) {
-                    if (intval($battleship['x']) == $position[0] && intval($battleship['y']) == $position[1]) {
-                        $potentialFormation[] = $battleship;
-                        $found = true;
-                        $this->serverLog("Found matching battleship", $battleship);
-                        break;
-                    }
-                }
-                if (!$found) {
-                    $valid = false;
-                    $this->serverLog("No matching battleship found for position", $position);
-                    break;
+                $matchingBattleship = $this->findBattleshipAtPosition($nearbyBattleships, $position[0], $position[1]);
+                if ($matchingBattleship) {
+                    $potentialFormation[] = $matchingBattleship;
+                } else {
+                    continue 2; // Skip to next formation if no matching battleship found
                 }
             }
-            if ($valid) {
-                $this->serverLog("Valid formation found", $potentialFormation);
+            if (count($potentialFormation) == 3) {
                 return $potentialFormation;
             }
         }
 
-        $this->serverLog("No valid formation found", "");
+        return null;
+    }
+
+    private function findBattleshipAtPosition($battleships, $x, $y)
+    {
+        foreach ($battleships as $battleship) {
+            if (intval($battleship['x']) == $x && intval($battleship['y']) == $y) {
+                return $battleship;
+            }
+        }
+        $this->serverLog("No battleship found at position ($x, $y)", "");
         return null;
     }
 
@@ -777,30 +891,47 @@ class Fortify extends Table
 
     private function checkTankFormation($centerUnit, $adjacentUnits)
     {
-        $tanks = array_filter($adjacentUnits, function ($unit) {
+        // First, let's find adjacent tanks
+        $adjacentTanks = array_filter($adjacentUnits, function ($unit) {
             return $unit['type'] == 'tank';
         });
 
-        if (count($tanks) < 1) {
+        // If there are no adjacent tanks, return null
+        if (count($adjacentTanks) == 0) {
             return null;
         }
 
-        foreach ($tanks as $partner) {
-            $potentialFormation = [$centerUnit, $partner];
-            $dx = $partner['x'] - $centerUnit['x'];
-            $dy = $partner['y'] - $centerUnit['y'];
-            $thirdUnitPosition = [
-                'x' => $partner['x'] + $dx,
-                'y' => $partner['y'] + $dy
+        foreach ($adjacentTanks as $adjacentTank) {
+            $dx = $adjacentTank['x'] - $centerUnit['x'];
+            $dy = $adjacentTank['y'] - $centerUnit['y'];
+
+            // Check both directions for the third unit
+            $directions = [
+                ['x' => $centerUnit['x'] - $dx, 'y' => $centerUnit['y'] - $dy],  // Opposite to adjacentTank
+                ['x' => $adjacentTank['x'] + $dx, 'y' => $adjacentTank['y'] + $dy]  // Beyond adjacentTank
             ];
-            foreach ($adjacentUnits as $thirdUnit) {
-                if ($thirdUnit['x'] == $thirdUnitPosition['x'] && $thirdUnit['y'] == $thirdUnitPosition['y']) {
-                    $potentialFormation[] = $thirdUnit;
-                    return $potentialFormation;
+
+            foreach ($directions as $direction) {
+                $thirdUnit = $this->findUnitAtPosition($adjacentUnits, $direction['x'], $direction['y']);
+                if ($thirdUnit !== null) {
+                    // We found a valid formation
+                    return [$centerUnit, $adjacentTank, $thirdUnit];
                 }
             }
         }
 
+        // No valid formation found
+        return null;
+    }
+
+    // Helper function to find a unit at a specific position
+    private function findUnitAtPosition($units, $x, $y)
+    {
+        foreach ($units as $unit) {
+            if ($unit['x'] == $x && $unit['y'] == $y) {
+                return $unit;
+            }
+        }
         return null;
     }
 
@@ -811,7 +942,7 @@ class Fortify extends Table
 
     private function getAdjacentUnits($unit)
     {
-        $sql = "SELECT unit_id, x, y, type FROM units 
+        $sql = "SELECT unit_id, x, y, type, is_fortified FROM units 
             WHERE player_id = " . self::escapeString($unit['player_id']) . "
             AND (
                 (ABS(x - " . $unit['x'] . ") <= 1 AND ABS(y - " . $unit['y'] . ") <= 1)
@@ -846,14 +977,21 @@ class Fortify extends Table
             throw new BgaUserException(self::_("You can only attack with your own units"));
         }
 
+        if ($attackingUnit['type'] == 'artillery') {
+            // Check if the defending unit is in the same row or column
+            if ($attackingUnit['x'] != $defendingUnit['x'] && $attackingUnit['y'] != $defendingUnit['y']) {
+                throw new BgaUserException(self::_("Artillery can only attack units in the same row or column"));
+            }
+        } else {
+            // Check if units are orthogonally adjacent; not applicable to choppers
+            if ($attackingUnit['type'] != 'chopper' && !$this->areUnitsAdjacent($attackingUnit, $defendingUnit)) {
+                throw new BgaUserException(self::_("The units must be orthogonally adjacent"));
+            }
+        }
+
         // Check if the attacking unit is in formation or fortified
         if (!$this->isUnitInFormation($attackingUnit) && !$attackingUnit['is_fortified']) {
             throw new BgaUserException(self::_("The attacking unit must be in formation or fortified"));
-        }
-
-        // Check if units are orthogonally adjacent
-        if ($attackingUnit['type'] != 'chopper' && !$this->areUnitsAdjacent($attackingUnit, $defendingUnit)) {
-            throw new BgaUserException(self::_("The units must be orthogonally adjacent"));
         }
 
         if ($attackingUnit['type'] == 'chopper') {
