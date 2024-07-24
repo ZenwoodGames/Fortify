@@ -918,10 +918,31 @@ class Fortify extends Table
                     return [$centerUnit, $adjacentTank, $thirdUnit];
                 }
             }
+
+            // Check for formations where the center unit is at the end of the line
+            $extendedDirections = [
+                ['x' => $adjacentTank['x'] + $dx, 'y' => $adjacentTank['y'] + $dy],
+                ['x' => $adjacentTank['x'] + 2 * $dx, 'y' => $adjacentTank['y'] + 2 * $dy]
+            ];
+
+            foreach ($extendedDirections as $direction) {
+                $thirdUnit = $this->findFriendlyUnitAtPosition($centerUnit['player_id'], $direction['x'], $direction['y']);
+                if ($thirdUnit !== null) {
+                    // We found a valid formation
+                    return [$centerUnit, $adjacentTank, $thirdUnit];
+                }
+            }
         }
 
         // No valid formation found
         return null;
+    }
+
+    // Helper function to find a friendly unit at a specific position
+    private function findFriendlyUnitAtPosition($playerId, $x, $y)
+    {
+        $sql = "SELECT * FROM units WHERE player_id = $playerId AND x = $x AND y = $y";
+        return self::getObjectFromDB($sql);
     }
 
     // Helper function to find a unit at a specific position
