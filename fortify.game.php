@@ -855,25 +855,39 @@ class Fortify extends Table
 
     private function checkInfantryFormation($centerUnit, $adjacentUnits)
     {
-        $infantry = array_filter($adjacentUnits, function ($unit) {
+        // Find adjacent infantry units
+        $adjacentInfantry = array_filter($adjacentUnits, function ($unit) {
             return $unit['type'] == 'infantry';
         });
 
-        if (count($infantry) < 1) {
+        // If there's no adjacent infantry, return null
+        if (empty($adjacentInfantry)) {
             return null;
         }
 
-        foreach ($infantry as $partner) {
-            $potentialFormation = [$centerUnit, $partner];
-            foreach ($adjacentUnits as $thirdUnit) {
-                if ($thirdUnit['unit_id'] != $partner['unit_id'] && $this->isAdjacent($partner, $thirdUnit)) {
-                    $potentialFormation[] = $thirdUnit;
-                    return $potentialFormation;
-                }
+        foreach ($adjacentInfantry as $partnerInfantry) {
+            $potentialFormation = [$centerUnit, $partnerInfantry];
+
+            // Check if either the center unit or partner infantry is adjacent to a fortified friendly unit
+            $fortifiedAdjacent = $this->findAdjacentFortifiedUnit($centerUnit, $adjacentUnits)
+                || $this->findAdjacentFortifiedUnit($partnerInfantry, $adjacentUnits);
+
+            if ($fortifiedAdjacent) {
+                return $potentialFormation;
             }
         }
 
         return null;
+    }
+
+    private function findAdjacentFortifiedUnit($unit, $adjacentUnits)
+    {
+        foreach ($adjacentUnits as $adjacentUnit) {
+            if ($adjacentUnit['is_fortified'] == '1' && $this->isAdjacent($unit, $adjacentUnit)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private function checkTankFormation($centerUnit, $adjacentUnits)
@@ -1154,11 +1168,11 @@ class Fortify extends Table
     private function getReinforcementTrackState()
     {
         $sql = "SELECT * FROM reinforcement_track";
-        
+
         $this->serverLog("sql", $sql);
         $reinforcementTrack = self::getCollectionFromDb($sql);
         $this->serverLog("reinforcementTrack", $reinforcementTrack);
-        
+
         return $reinforcementTrack;
     }
 
