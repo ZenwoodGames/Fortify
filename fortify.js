@@ -1,7 +1,7 @@
 /**
  *------
  * BGA framework: Gregory Isabelli & Emmanuel Colin & BoardGameArena
- * Fortify implementation : © <Your name here> <Your email address here>
+ * Fortify implementation : © Nirmatt Gopal nrmtgpl@gmail.com
  *
  * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
  * See http://en.boardgamearena.com/#!doc/Studio for more information.
@@ -50,12 +50,6 @@ define([
 
                 console.log("Starting game setup");
 
-                // Setting up player boards
-                // for (var player_id in gamedatas.players) {
-                //     var player = gamedatas.players[player_id];
-                //     // TODO: Setting up players boards if needed
-                // }
-
                 this.playerColor = gamedatas.players[this.player_id].color;
 
                 // Store the game variant
@@ -79,11 +73,6 @@ define([
                 // Add event listeners to the units
                 dojo.query('.unit').connect('onclick', this, dojo.hitch(this, 'handleUnitClick'));
 
-                // const units = document.querySelectorAll('.unit');
-                // units.forEach(unit => {
-                //     unit.addEventListener('click', this.handleUnitClick);
-                // });
-
                 // Add event listener for slots
                 dojo.query('.board-slot').connect('onclick', this, dojo.hitch(this, 'handleSlotClick'));
                 //dojo.connect($('btnMove'), 'onclick', this, 'startMoveAction');
@@ -97,7 +86,6 @@ define([
                     var unit = gamedatas.units[i];
                     this.placeUnitOnBoard(unit.unit_id, unit.type, unit.x, unit.y, unit.player_id, unit.is_fortified);
                 }
-
 
                 // Initialize the reinforcement track
                 if (gamedatas.reinforcementTrack)
@@ -280,26 +268,6 @@ define([
                                 });
                             }
                         }
-                        // switch (event.target.classList[1]) {
-                        //     case 'battleship':
-                        //         const waterSlot = document.querySelectorAll('.water');
-                        //         waterSlot.forEach(slot => {
-                        //             slot.classList.add('highlighted');
-                        //         });
-                        //         break;
-                        //     case 'infantry':
-                        //     case 'tank':
-                        //         const landSlot = document.querySelectorAll('.land');
-                        //         landSlot.forEach(slot => {
-                        //             slot.classList.add('highlighted');
-                        //         });
-
-                        //         break;
-                        //     case 'chopper':
-                        //         this.highlightFriendlyBattleships();
-                        //         this.selectedSpecialUnit = event.target;
-                        //         break;
-                        // }
                     }
                     else {
                         // If unit is on the board, the unit can move/attack
@@ -441,14 +409,14 @@ define([
                             this.moveUnit(unitId, unitType, toX, toY);
                         }
                         else {
-                            if(event.target.classList.contains('highlighted')){
+                            if (event.target.classList.contains('highlighted')) {
                                 var unitId = this.selectedUnit.id;
                                 var toX = parseInt(event.currentTarget.dataset.x);
                                 var toY = parseInt(event.currentTarget.dataset.y);
                                 var unitType = '';
-    
+
                                 unitType = this.selectedUnit.classList[1];
-    
+
                                 this.moveUnit(unitId, unitType, toX, toY);
                             }
                         }
@@ -469,93 +437,22 @@ define([
                         }
                     } else {
                         // Highlight all valid spaces for chopper move
-                        // dojo.query('.board-slot').forEach(slot => {
-
-                        //     var slotChildren = Array.from(slot.children);
-                        //     var foundChild = slotChildren.filter(function (child) {
-
-                        //         if (child.classList.contains('chopper'))
-                        //             return false;
-                        //         else
-                        //             return true;
-                        //     });
-
-                        //     if (slotChildren && slotChildren.length > 0 && foundChild && foundChild.length > 0)
-                        //         return;
-                        //     else
-                        //         slot.classList.add('highlighted');
-                        // });
-                        //.addClass('highlighted');
+                        
                     }
                     return;
                 }
                 ////////////////////////////////////// End Move region //////////////////////////////////
-
-                // switch (this.gameState) {
-                //     case 'moving':
-                //         var toX = parseInt(event.currentTarget.dataset.x);
-                //         var toY = parseInt(event.currentTarget.dataset.y);
-                //         var unitId = this.selectedUnit.id;
-
-                //         if (event.currentTarget.classList.contains('highlighted')) {
-                //             this.moveUnit(unitId, toX, toY);
-                //         }
-                //         break;
-                //     case 'firstEnlisting':
-                //     case 'enlist':
-                //         if (!this.isSlotOccupied(event.target)) {
-                //             this.finishEnlist(this.selectedUnit.classList[1],
-                //                 event.target.dataset.x, event.target.dataset.y,
-                //                 this.selectedUnit.id);
-
-                //             // this.selectedUnit.classList.remove("selected");
-                //             // this.selectedUnit.style = "margin: 2px 0 0 7px;"
-                //             // event.target.appendChild(this.selectedUnit);
-                //         }
-                //         else {
-                //             // Remove unit selection
-                //             //this.removeUnitHighlight();
-                //             //this.removeSlotHighlight();
-                //         }
-                //         break;
-                // }
-                // this.selectedUnit = '';
-                // this.removeSlotHighlight();
             },
-
-            // selectUnit: function (unit) {
-            //     this.clearHighlights();
-            //     //this.selectedUnit = unit;
-            //     dojo.addClass(unit.unit_id, 'selected');
-
-            //     //this.highlightValidMoves(unit);
-            //     //this.highlightValidAttackTargets(unit);
-            // },
 
             deselectUnit: function () {
                 dojo.query('.selected').removeClass('selected');
             },
 
             initBoard: function (gamedatas) {
-                // const unitsContainer = document.getElementById('units_container');
-
-                // // Ensure units is an array before using forEach
-                // if (Array.isArray(gamedatas.units)) {
-                //     gamedatas.units.forEach(unit => {
-                //         const unitElement = document.createElement('div');
-                //         unitElement.id = unit.id;
-                //         unitElement.className = `unit ${unit.type} ${unit.player}`;
-                //         unitElement.style.top = `${unit.y * 100}px`;
-                //         unitElement.style.left = `${unit.x * 100}px`;
-                //         unitsContainer.appendChild(unitElement);
-                //     });
-                // } else {
-                //     console.error("Units data is not an array:", gamedatas.units);
-                // }
+                
             },
 
             initPlayerDecks: function (gamedatas) {
-                // Example initialization; modify based on actual data structure
                 const playerDeckBottom = document.getElementById('player_deck_bottom');
                 const playerDeckTop = document.getElementById('player_deck_top');
 
@@ -1076,6 +973,8 @@ define([
                     this.removeSlotHighlight();
                     this.selectedUnit = null;
                     this.selectedSpecialUnit = null;
+                    dojo.removeClass('btnAttack', 'active');
+                    dojo.style($('btnAttack'), 'display', 'none');
                 }, function (is_error) {
                     if (is_error) {
                         this.removeUnitHighlight();
@@ -1220,11 +1119,11 @@ define([
                                 break;
                         }
                         // Artillery is a land only unit
-                        if(selectedUnitDetails.type == 'artillery')
+                        if (selectedUnitDetails.type == 'artillery')
                             var slot = document.querySelector(`.board-slot[data-x="${newX}"][data-y="${newY}"]:is(.${slotType})`);
                         else
                             var slot = document.querySelector(`.board-slot[data-x="${newX}"][data-y="${newY}"]:is(.${slotType}, .shore)`);
-                            
+
                         if (slot && !slot.hasChildNodes()) {
                             slot.classList.add('highlighted');
                         }
@@ -1252,11 +1151,11 @@ define([
                                     slotType = "land";
                                     break;
                             }
-                            if(selectedUnitDetails.type == 'artillery')
+                            if (selectedUnitDetails.type == 'artillery')
                                 var slot = document.querySelector(`.board-slot[data-x="${newX}"][data-y="${newY}"]:is(.${slotType})`);
                             else
                                 var slot = document.querySelector(`.board-slot[data-x="${newX}"][data-y="${newY}"]:is(.${slotType}, .shore)`);
-                        
+
                             if (slot && !slot.hasChildNodes() && (newX !== x || newY !== y)) {
                                 slot.classList.add('highlighted');
                             }
