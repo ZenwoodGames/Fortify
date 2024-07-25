@@ -1374,7 +1374,7 @@ define([
                 console.log('Notification: Reinforcement track updated', notif);
 
                 // Clear the current reinforcement track display
-                dojo.query('#reinforcement_track .reinforcement_slot').forEach(dojo.empty);
+                //dojo.query('#reinforcement_track .reinforcement_slot').forEach(dojo.empty);
 
                 // Update the reinforcement track with the new state
                 for (var unitId in notif.args.reinforcementTrack) {
