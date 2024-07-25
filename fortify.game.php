@@ -592,7 +592,7 @@ class Fortify extends Table
 
         $this->serverLog("Resulting formation", $formation);
 
-        if (!$formation) {
+        if (!$formation && $unit['type'] != 'artillery' ) {
             throw new BgaUserException(self::_("No valid formation found"));
         }
 

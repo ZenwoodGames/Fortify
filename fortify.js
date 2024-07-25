@@ -441,14 +441,16 @@ define([
                             this.moveUnit(unitId, unitType, toX, toY);
                         }
                         else {
-                            var unitId = this.selectedUnit.id;
-                            var toX = parseInt(event.currentTarget.dataset.x);
-                            var toY = parseInt(event.currentTarget.dataset.y);
-                            var unitType = '';
-
-                            unitType = this.selectedUnit.classList[1];
-
-                            this.moveUnit(unitId, unitType, toX, toY);
+                            if(event.target.classList.contains('highlighted')){
+                                var unitId = this.selectedUnit.id;
+                                var toX = parseInt(event.currentTarget.dataset.x);
+                                var toY = parseInt(event.currentTarget.dataset.y);
+                                var unitType = '';
+    
+                                unitType = this.selectedUnit.classList[1];
+    
+                                this.moveUnit(unitId, unitType, toX, toY);
+                            }
                         }
                     }
                 }
