@@ -67,7 +67,6 @@ define([
                     dojo.style($('player_deck_bottom'), 'width', '600px');
                 }
 
-                debugger;
                 // Initialize the game board
                 this.initBoard(gamedatas);
 
@@ -126,15 +125,15 @@ define([
                         else
                             unitDiv.style = "margin: 2px 0 0 7px";
                     }
-                    else{
-                        if (this.isSlotOccupied(slot)){
+                    else {
+                        if (this.isSlotOccupied(slot)) {
                             // Chopper already got attached
                             slot.firstChild.style = "margin: 0 -75px";
                             unitDiv.style = "margin: 2px 0 0 7px";
                             slot.insertBefore(unitDiv, slot.firstChild);
                             return;
                         }
-                        unitDiv.style = "margin: 2px 0 0 7px";                        
+                        unitDiv.style = "margin: 2px 0 0 7px";
                     }
                     slot.appendChild(unitDiv);
                 }
@@ -330,27 +329,7 @@ define([
                     // Deselect previously selected token
                     this.deselectUnit();
 
-                    // this.selectedUnit = document.querySelectorAll('.selected');
-                    // if (this.selectedUnit && this.selectedUnit.length > 0) {
-                    //     this.selectedUnit.forEach(sUnit => {
-                    //         sUnit.classList.remove('selected');
-                    //     });
-                    // }
-                    // const highlightesShoreSpaces = document.querySelectorAll('.highlighted');
-                    // if (this.highlightesShoreSpaces && this.highlightesShoreSpaces.length > 0) {
-                    //     this.highlightesShoreSpaces.forEach(highlightesShoreSpace => {
-                    //         highlightesShoreSpace.classList.remove('highlighted');
-                    //     });
-                    // }
-
-                    // this.selectedUnit.classList.add('selected');
-
                     dojo.addClass(event.target.id, 'selected');
-                    // // Highlight shore spaces
-                    // const shoreSpaces = document.querySelectorAll('.shore');
-                    // shoreSpaces.forEach(space => {
-                    //     space.classList.add('highlighted');
-                    // });
                 }
                 else {
                     this.showMessage(_("This is not your turn"), 'info');
@@ -958,10 +937,35 @@ define([
             },
 
             highlightValidTargets: function (attackingUnit) {
+                if (attackingUnit.type === 'artillery') {
+                    this.highlightArtilleryTargets(attackingUnit);
+                } else {
+                    this.highlightAdjacentTargets(attackingUnit);
+                }
+            },
+
+            highlightArtilleryTargets: function (artilleryUnit) {
+                // Get all units on the board
+                var allUnits = this.getAllUnitsOnBoard();
+
+                allUnits.forEach(unit => {
+                    if (artilleryUnit.is_fortified && unit.player_id != this.player_id) {
+                        // Check if the unit is in the same row or column as the artillery
+                        if (unit.x === artilleryUnit.x || unit.y === artilleryUnit.y) {
+                            // Check fortification rules
+                            if (!unit.is_fortified || (unit.is_fortified && artilleryUnit.is_fortified)) {
+                                this.highlightUnit(unit.unit_id);
+                            }
+                        }
+                    }
+                });
+            },
+
+            highlightAdjacentTargets: function (attackingUnit) {
                 var adjacentUnits = this.getAdjacentUnits(attackingUnit, true);
 
                 adjacentUnits.forEach(unit => {
-                    if (unit.player_id !== this.player_id) {
+                    if (unit.player_id != this.player_id) {
                         // Check if the attacking unit is fortified or in formation
                         if (attackingUnit.is_fortified) {
                             // If the defending unit is fortified, only highlight if the attacking unit is also fortified
@@ -973,20 +977,14 @@ define([
                 });
             },
 
-            // isUnitInFormation: function (unit) {
-            //     var adjacentUnits = this.getAdjacentUnits(unit, false);
-
-            //     switch (unit.type) {
-            //         case 'battleship':
-            //             return this.checkBattleshipFormation(unit, adjacentUnits) !== null;
-            //         case 'infantry':
-            //             return this.checkInfantryFormation(unit, adjacentUnits) !== null;
-            //         case 'tank':
-            //             return this.checkTankFormation(unit, adjacentUnits) !== null;
-            //         default:
-            //             return false;
-            //     }
-            // },
+            getAllUnitsOnBoard: function () {
+                // This function should return all units currently on the board
+                debugger;
+                var allUnitsOnBoard = document.querySelectorAll('.board-slot > .unit');
+                return Array.from(allUnitsOnBoard).map(unit => {
+                    return this.getUnitDetails(unit);
+                });
+            },
 
             getAdjacentUnits: function (unit, isEnemyUnit) {
                 var adjacentUnits = [];
@@ -1215,8 +1213,16 @@ define([
                             case 'battleship':
                                 slotType = "water";
                                 break;
+                            case 'artillery':
+                                slotType = "land";
+                                break;
                         }
-                        var slot = document.querySelector(`.board-slot[data-x="${newX}"][data-y="${newY}"]:is(.${slotType}, .shore)`);
+                        // Artillery is a land only unit
+                        if(selectedUnitDetails.type == 'artillery')
+                            var slot = document.querySelector(`.board-slot[data-x="${newX}"][data-y="${newY}"]:is(.${slotType})`);
+                        else
+                            var slot = document.querySelector(`.board-slot[data-x="${newX}"][data-y="${newY}"]:is(.${slotType}, .shore)`);
+                            
                         if (slot && !slot.hasChildNodes()) {
                             slot.classList.add('highlighted');
                         }
@@ -1240,8 +1246,15 @@ define([
                                 case 'battleship':
                                     slotType = "water";
                                     break;
+                                case 'artillery':
+                                    slotType = "land";
+                                    break;
                             }
-                            var slot = document.querySelector(`.board-slot[data-x="${newX}"][data-y="${newY}"]:is(.${slotType},.shore)`);
+                            if(selectedUnitDetails.type == 'artillery')
+                                var slot = document.querySelector(`.board-slot[data-x="${newX}"][data-y="${newY}"]:is(.${slotType})`);
+                            else
+                                var slot = document.querySelector(`.board-slot[data-x="${newX}"][data-y="${newY}"]:is(.${slotType}, .shore)`);
+                        
                             if (slot && !slot.hasChildNodes() && (newX !== x || newY !== y)) {
                                 slot.classList.add('highlighted');
                             }
