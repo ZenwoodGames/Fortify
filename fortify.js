@@ -263,9 +263,11 @@ define([
                                 });
                             }
                             else {
-                                dojo.query('.shore:not(:has(.unit))').forEach(shore => {
-                                    dojo.addClass(shore.id, 'highlighted')
-                                });
+                                if (!this.selectedUnit.classList[1] == 'artillery') {
+                                    dojo.query('.shore:not(:has(.unit))').forEach(shore => {
+                                        dojo.addClass(shore.id, 'highlighted')
+                                    });
+                                }
                             }
                         }
                     }
@@ -306,37 +308,66 @@ define([
 
             handleSlotClick: function (event) {
                 debugger;
-                let slot;
-                if (event.target.classList.contains("unit") || this.isSlotOccupied(event.target))
-                    slot = event.target.parentNode;
-                else
-                    slot = event.target;
+                if (this.isCurrentPlayerActive()) {
+                    let slot;
+                    if (event.target.classList.contains("unit") || this.isSlotOccupied(event.target))
+                        slot = event.target.parentNode;
+                    else
+                        slot = event.target;
 
-                // Fortify action
-                if (this.isSlotOccupied(slot) && this.fortifyMode && this.getUnitDetails(event.target).player_id == this.player_id) {
-                    this.fortify(this.selectedUnit.id);
-                    return;
-                }
-
-                /////////////////////////////////////////////////////////////////////////////////////////
-                ///////////////////////////////////// Enlist ////////////////////////////////////////////
-                /////////////////////////////////////////////////////////////////////////////////////////
-                // If unit is selected and is not on the board, then it is an enlist
-                if (this.selectedUnit && !this.isUnitOnBoard(this.selectedUnit)) {
-                    if (!this.isSlotOccupied(slot) && slot.classList.contains('highlighted')) {
-                        this.finishEnlist(this.selectedUnit.classList[1],
-                            slot.dataset.x, slot.dataset.y,
-                            this.selectedUnit.id);
+                    // Fortify action
+                    if (this.isSlotOccupied(slot) && this.fortifyMode && this.getUnitDetails(event.target).player_id == this.player_id) {
+                        this.fortify(this.selectedUnit.id);
                         return;
                     }
-                }
 
-                // Handle chopper enlist
-                if (this.selectedSpecialUnit && (this.selectedSpecialUnit != this.selectedUnit) && this.selectedSpecialUnit.classList.contains('chopper')) {
-                    if (this.selectedUnit && this.selectedUnit.classList.contains('battleship')) {
-                        if (this.isUnitOnBoard(this.selectedSpecialUnit)) {
-                            // If slot is not occupied, move the token
-                            if (this.selectedSpecialUnit.parentNode != slot) {
+                    /////////////////////////////////////////////////////////////////////////////////////////
+                    ///////////////////////////////////// Enlist ////////////////////////////////////////////
+                    /////////////////////////////////////////////////////////////////////////////////////////
+                    // If unit is selected and is not on the board, then it is an enlist
+                    if (this.selectedUnit && !this.isUnitOnBoard(this.selectedUnit)) {
+                        if (!this.isSlotOccupied(slot) && slot.classList.contains('highlighted')) {
+                            this.finishEnlist(this.selectedUnit.classList[1],
+                                slot.dataset.x, slot.dataset.y,
+                                this.selectedUnit.id);
+                            return;
+                        }
+                    }
+
+                    // Handle chopper enlist
+                    if (this.selectedSpecialUnit && (this.selectedSpecialUnit != this.selectedUnit) && this.selectedSpecialUnit.classList.contains('chopper')) {
+                        if (this.selectedUnit && this.selectedUnit.classList.contains('battleship')) {
+                            if (this.isUnitOnBoard(this.selectedSpecialUnit)) {
+                                // If slot is not occupied, move the token
+                                if (this.selectedSpecialUnit.parentNode != slot) {
+                                    var unitId = this.selectedSpecialUnit.id;
+                                    var toX = parseInt(event.currentTarget.dataset.x);
+                                    var toY = parseInt(event.currentTarget.dataset.y);
+                                    var unitType = '';
+
+                                    this.selectedSpecialUnit ? unitType = this.selectedSpecialUnit.classList[1] : this.selectedUnit.classList[1];
+
+                                    this.moveUnit(unitId, unitType, toX, toY);
+                                }
+                            }
+                            else {
+                                this.finishEnlist(this.selectedSpecialUnit.classList[1],
+                                    slot.dataset.x, slot.dataset.y,
+                                    this.selectedSpecialUnit.id);
+                            }
+                            return;
+                        }
+                    }
+
+                    ////////////////////////////////////// End Enlist region //////////////////////////////////
+
+                    /////////////////////////////////////////////////////////////////////////////////////////
+                    /////////////////////////////////////// Attack ////////////////////////////////////////////
+                    /////////////////////////////////////////////////////////////////////////////////////////
+
+                    if (this.isSlotOccupied(slot)) {
+                        if (this.selectedUnit && event.target != this.selectedUnit) {
+                            if (this.selectedSpecialUnit) {
                                 var unitId = this.selectedSpecialUnit.id;
                                 var toX = parseInt(event.currentTarget.dataset.x);
                                 var toY = parseInt(event.currentTarget.dataset.y);
@@ -346,102 +377,75 @@ define([
 
                                 this.moveUnit(unitId, unitType, toX, toY);
                             }
-                        }
-                        else {
-                            this.finishEnlist(this.selectedSpecialUnit.classList[1],
-                                slot.dataset.x, slot.dataset.y,
-                                this.selectedSpecialUnit.id);
-                        }
-                        return;
-                    }
-                }
-
-                ////////////////////////////////////// End Enlist region //////////////////////////////////
-
-                /////////////////////////////////////////////////////////////////////////////////////////
-                /////////////////////////////////////// Attack ////////////////////////////////////////////
-                /////////////////////////////////////////////////////////////////////////////////////////
-
-                if (this.isSlotOccupied(slot)) {
-                    if (this.selectedUnit && event.target != this.selectedUnit) {
-                        if (this.selectedSpecialUnit) {
-                            var unitId = this.selectedSpecialUnit.id;
-                            var toX = parseInt(event.currentTarget.dataset.x);
-                            var toY = parseInt(event.currentTarget.dataset.y);
-                            var unitType = '';
-
-                            this.selectedSpecialUnit ? unitType = this.selectedSpecialUnit.classList[1] : this.selectedUnit.classList[1];
-
-                            this.moveUnit(unitId, unitType, toX, toY);
-                        }
-                        else {
-                            this.attack(this.selectedUnit.id, event.target.id);
-                        }
-                    }
-                }
-
-                /////////////////////////////////////////////////////////////////////////////////////////
-                /////////////////////////////////////// Move ////////////////////////////////////////////
-                /////////////////////////////////////////////////////////////////////////////////////////
-                // If unit is selected and is on the board, then it is a move
-                if (this.selectedUnit && this.isUnitOnBoard(this.selectedUnit)) {
-                    // If slot is occupied and selected unit is friendly, then highlight movable slots
-                    if (this.isSlotOccupied(slot)) {
-                        if (this.getUnitDetails(this.selectedUnit).player_id == this.player_id) {
-                            this.highlightValidMoves();
-                            if (!this.selectedUnit.classList.contains('chopper'))
-                                this.highlightValidTargets(this.getUnitDetails(this.selectedUnit));
                             else {
-                                // this.showMessage(_("A Chopper can only attack an enemy unit that is directly beneath it"), 'info');
+                                this.attack(this.selectedUnit.id, event.target.id);
                             }
                         }
                     }
-                    else {
-                        // If slot is not occupied, move the token
-                        if (this.selectedSpecialUnit && this.selectedSpecialUnit.parentNode != slot && slot.classList.contains('highlighted')) {
-                            var unitId = this.selectedUnit.id;
-                            var toX = parseInt(event.currentTarget.dataset.x);
-                            var toY = parseInt(event.currentTarget.dataset.y);
-                            var unitType = '';
 
-                            this.selectedSpecialUnit ? unitType = this.selectedSpecialUnit.classList[1] : this.selectedUnit.classList[1];
-
-                            this.moveUnit(unitId, unitType, toX, toY);
+                    /////////////////////////////////////////////////////////////////////////////////////////
+                    /////////////////////////////////////// Move ////////////////////////////////////////////
+                    /////////////////////////////////////////////////////////////////////////////////////////
+                    // If unit is selected and is on the board, then it is a move
+                    if (this.selectedUnit && this.isUnitOnBoard(this.selectedUnit)) {
+                        // If slot is occupied and selected unit is friendly, then highlight movable slots
+                        if (this.isSlotOccupied(slot)) {
+                            if (this.getUnitDetails(this.selectedUnit).player_id == this.player_id) {
+                                this.highlightValidMoves();
+                                if (!this.selectedUnit.classList.contains('chopper'))
+                                    this.highlightValidTargets(this.getUnitDetails(this.selectedUnit));
+                                else {
+                                    // this.showMessage(_("A Chopper can only attack an enemy unit that is directly beneath it"), 'info');
+                                }
+                            }
                         }
                         else {
-                            if (event.target.classList.contains('highlighted')) {
+                            // If slot is not occupied, move the token
+                            if (this.selectedSpecialUnit && this.selectedSpecialUnit.parentNode != slot && slot.classList.contains('highlighted')) {
                                 var unitId = this.selectedUnit.id;
                                 var toX = parseInt(event.currentTarget.dataset.x);
                                 var toY = parseInt(event.currentTarget.dataset.y);
                                 var unitType = '';
 
-                                unitType = this.selectedUnit.classList[1];
+                                this.selectedSpecialUnit ? unitType = this.selectedSpecialUnit.classList[1] : this.selectedUnit.classList[1];
 
                                 this.moveUnit(unitId, unitType, toX, toY);
                             }
+                            else {
+                                if (event.target.classList.contains('highlighted')) {
+                                    var unitId = this.selectedUnit.id;
+                                    var toX = parseInt(event.currentTarget.dataset.x);
+                                    var toY = parseInt(event.currentTarget.dataset.y);
+                                    var unitType = '';
+
+                                    unitType = this.selectedUnit.classList[1];
+
+                                    this.moveUnit(unitId, unitType, toX, toY);
+                                }
+                            }
                         }
                     }
-                }
 
-                if (this.selectedSpecialUnit && this.selectedSpecialUnit.classList.contains('chopper')) {
-                    // Selected a slot other than one occupied by chopper and does not contain another chopper
-                    if (this.selectedSpecialUnit.parentNode != slot && !event.target.classList.contains('chopper')) {
-                        var toX = parseInt(event.currentTarget.dataset.x);
-                        var toY = parseInt(event.currentTarget.dataset.y);
-                        var unitId = this.selectedSpecialUnit.id;
-                        var unitType = '';
+                    if (this.selectedSpecialUnit && this.selectedSpecialUnit.classList.contains('chopper')) {
+                        // Selected a slot other than one occupied by chopper and does not contain another chopper
+                        if (this.selectedSpecialUnit.parentNode != slot && !event.target.classList.contains('chopper')) {
+                            var toX = parseInt(event.currentTarget.dataset.x);
+                            var toY = parseInt(event.currentTarget.dataset.y);
+                            var unitId = this.selectedSpecialUnit.id;
+                            var unitType = '';
 
-                        this.selectedSpecialUnit ? unitType = this.selectedSpecialUnit.classList[1] : this.selectedUnit.classList[1];
-                        if (event.currentTarget.classList.contains('highlighted')) {
-                            this.moveUnit(unitId, unitType, toX, toY);
+                            this.selectedSpecialUnit ? unitType = this.selectedSpecialUnit.classList[1] : this.selectedUnit.classList[1];
+                            if (event.currentTarget.classList.contains('highlighted')) {
+                                this.moveUnit(unitId, unitType, toX, toY);
+                            }
+                        } else {
+                            // Highlight all valid spaces for chopper move
+
                         }
-                    } else {
-                        // Highlight all valid spaces for chopper move
-                        
+                        return;
                     }
-                    return;
+                    ////////////////////////////////////// End Move region //////////////////////////////////
                 }
-                ////////////////////////////////////// End Move region //////////////////////////////////
             },
 
             deselectUnit: function () {
@@ -449,7 +453,7 @@ define([
             },
 
             initBoard: function (gamedatas) {
-                
+
             },
 
             initPlayerDecks: function (gamedatas) {
@@ -967,6 +971,7 @@ define([
                     defendingUnitId: defendingUnitId,
                     lock: true
                 }, this, function (result) {
+                    debugger;
                     this.selectedSpecialUnit ? dojo.style(this.selectedSpecialUnit, 'margin', '2px 0px 0px 7px;') : null;
 
                     this.removeUnitHighlight();
@@ -1177,10 +1182,13 @@ define([
                         this.removeSlotHighlight();
                         this.selectedUnit = null;
                         this.selectedSpecialUnit = null;
-                    }
-                        , function (is_error) {
-                            console.log(is_error);
-                            // What to do after the server call in any case
+                        dojo.removeClass('btnAttack', 'active');
+                        dojo.style($('btnAttack'), 'display', 'none');
+                    }, function (is_error) {
+                            if (is_error) {
+                                dojo.removeClass('btnAttack', 'active');
+                                dojo.style($('btnAttack'), 'display', 'none');
+                            }
                         });
                 }
             },
@@ -1263,6 +1271,7 @@ define([
                 dojo.subscribe('unitsFortified', this, "notif_unitsFortified");
                 dojo.subscribe('unitAttacked', this, "notif_unitAttacked");
                 dojo.subscribe('unitReturnedToSupply', this, "notif_unitReturnedToSupply");
+                dojo.subscribe('reinforcementTrackUpdated', this, "notif_reinforcementTrackUpdated");
             },
             notif_actionsRemaining: function (notif) {
                 this.updateActionCounter(notif.args.actionsRemaining);
@@ -1347,7 +1356,7 @@ define([
                 // Update the reinforcement track
                 debugger;
                 if (notif.args.attacking_unit_type == 'chopper') {
-                    dojo.style($(notif.args.attacking_unit_id), 'margin', '2px 0px 0px 7px;');
+                    dojo.style($(notif.args.attacking_unit_id), 'margin', '2px 0px 0px 7px');
                 }
 
                 this.updateReinforcementTrack(notif.args.reinforcementTrack);
@@ -1358,6 +1367,44 @@ define([
                     .replace('${attacking_unit_type}', notif.args.attacking_unit_type));
 
                 this.exitAttackMode();
+            },
+
+            notif_reinforcementTrackUpdated: function (notif) {
+                debugger;
+                console.log('Notification: Reinforcement track updated', notif);
+
+                // Clear the current reinforcement track display
+                dojo.query('#reinforcement_track .reinforcement_slot').forEach(dojo.empty);
+
+                // Update the reinforcement track with the new state
+                for (var unitId in notif.args.reinforcementTrack) {
+                    var unit = notif.args.reinforcementTrack[unitId];
+                    var slotId = 'reinforcement_slot_' + unit.position;
+                    var slot = $(slotId);
+
+                    if (slot) {
+                        var unitDiv = $(unit.unit_id);
+                        if (unitDiv) {
+                            // If the unit div exists, move it to the reinforcement track slot
+                            dojo.place(unitDiv, slot);
+                            dojo.addClass(unitDiv, 'reinforcement');
+
+                            // Update fortified status if needed
+                            if (unit.is_fortified == '1') {
+                                dojo.addClass(unitDiv, 'fortified');
+                            } else {
+                                dojo.removeClass(unitDiv, 'fortified');
+                            }
+                        } else {
+                            // If the unit div doesn't exist, create it
+                            unitDiv = this.createUnitDiv(unit.unit_id, unit.type, this.gamedatas.players[unit.player_id].color);
+                            if (unit.is_fortified == '1') {
+                                dojo.addClass(unitDiv, 'fortified');
+                            }
+                            dojo.place(unitDiv, slot);
+                        }
+                    }
+                }
             },
 
             notif_unitReturnedToSupply: function (notif) {
