@@ -23,6 +23,10 @@ require_once(APP_GAMEMODULE_PATH . 'module/table/table.game.php');
 
 class Fortify extends Table
 {
+    // Add these new properties at the beginning of the Fortify class
+    private $volleyCount = 0;
+    private $playerVolleyWins = array();
+
     function __construct()
     {
         // Your global variables labels:
@@ -78,6 +82,8 @@ class Fortify extends Table
 
         // Initialize the first round flag
         $this->setGameStateInitialValue('isFirstRound', 1);
+        // Initialize the very first turn flag
+        $this->setGameStateInitialValue('isVeryFirstTurn', 1);
         // Initialize the actions counter (1 for first round)
         $this->setGameStateInitialValue('actionsRemaining', 1);
 
@@ -205,18 +211,29 @@ class Fortify extends Table
 
     function stNextPlayer()
     {
-        // Activate next player
-        $player_id = $this->activeNextPlayer();
+        $this->serverLog("Entered stNextPlayer method", "");
+        // Check for game end conditions
+        if ($this->checkGameEnd()) {
+            return; // The game has ended, no need to proceed
+        }
+
+        // If the game hasn't ended, proceed with the next player's turn
+        $player_id = self::activeNextPlayer();
         self::giveExtraTime($player_id);
 
         $isFirstRound = $this->getGameStateValue('isFirstRound');
+        $isVeryFirstTurn = $this->getGameStateValue('isVeryFirstTurn');
 
         if ($isFirstRound) {
-            // First round: 2 actions per player, first must be enlist
-            $this->setGameStateValue('actionsRemaining', 2);
-            $this->gamestate->nextState('playerFirstEnlist');
+            if ($isVeryFirstTurn) {
+                $this->setGameStateValue('isVeryFirstTurn', 0);
+                $this->setGameStateValue('actionsRemaining', 1);
+                $this->gamestate->nextState('playerFirstEnlist');
+            } else {
+                $this->setGameStateValue('actionsRemaining', 2);
+                $this->gamestate->nextState('playerFirstTurn');
+            }
         } else {
-            // Regular rounds: 2 actions per player
             $this->setGameStateValue('actionsRemaining', 2);
             $this->gamestate->nextState('playerTurn');
         }
@@ -389,10 +406,15 @@ class Fortify extends Table
         $isFirstRound = $this->getGameStateValue('isFirstRound');
         $isVeryFirstTurn = $this->getGameStateValue('isVeryFirstTurn');
 
+        $this->serverLog("isFirstRound inside enlist", $isFirstRound);
+        $this->serverLog("isVeryFirstTurn inside enlist", $isVeryFirstTurn);
+
         if ($isFirstRound) {
             if ($isVeryFirstTurn || $actionsRemaining == 0) {
                 // If it's the very first turn or we've used all actions, move to next player
-                $this->gamestate->nextState('nextPlayerFirstTurn');
+                $this->serverLog("If it's the very first turn or we've used all actions, move to next player", "");
+                $this->setGameStateValue('isVeryFirstTurn', 0);
+                $this->gamestate->nextState('nextPlayer');
             } else {
                 // Otherwise, go to regular first round turn
                 $this->gamestate->nextState('playerFirstTurn');
@@ -408,7 +430,7 @@ class Fortify extends Table
         } else {
             // Regular round logic
             if ($actionsRemaining == 0) {
-                $this->gamestate->nextState('endTurn');
+                $this->gamestate->nextState('nextPlayer');
             } else {
                 // Notify clients about the updated action count
                 self::notifyAllPlayers('actionsRemaining', '', array(
@@ -569,7 +591,7 @@ class Fortify extends Table
         $sql = "SELECT unit_id, x, y, type, player_id, is_fortified FROM units WHERE unit_id = " . self::escapeString($unitId);
         $unit = self::getObjectFromDB($sql);
 
-        $this->serverLog("Selected unit", $unit);
+        $this->serverLog("Selected unit for fortification", $unit);
 
         if (!$unit) {
             throw new BgaUserException(self::_("Invalid unit"));
@@ -618,9 +640,18 @@ class Fortify extends Table
             $this->setGameStateValue('actionsRemaining', $actionsRemaining);
         }
 
+        // Check for game end conditions
+        if ($this->checkGameEnd()) {
+            return; // Game has ended, no need to proceed
+        }
+
         if ($actionsRemaining == 0) {
             $this->gamestate->nextState('endTurn');
         } else {
+            // Update the UI about remaining actions
+            self::notifyAllPlayers('actionsRemaining', '', [
+                'actionsRemaining' => $actionsRemaining
+            ]);
             $this->gamestate->nextState('stayInState');
         }
     }
@@ -633,7 +664,9 @@ class Fortify extends Table
 
         switch ($centerUnit['type']) {
             case 'battleship':
-                return $this->checkBattleshipFormation($centerUnit, $adjacentUnits);
+                $formation = $this->checkBattleshipFormation($centerUnit, $adjacentUnits);
+                $this->serverLog("Battleship formation result", $formation);
+                return $formation;
             case 'infantry':
                 return $this->checkInfantryFormation($centerUnit, $adjacentUnits);
             case 'tank':
@@ -703,36 +736,50 @@ class Fortify extends Table
 
         $this->serverLog("Checking formation with center at ($centerX, $centerY)", "");
 
-        // Check horizontal formation
-        $leftUnit = $this->findBattleshipAtPosition($nearbyBattleships, $centerX - 1, $centerY);
-        $rightUnit = $this->findBattleshipAtPosition($nearbyBattleships, $centerX + 1, $centerY);
-
-        if ($leftUnit && $rightUnit) {
-            $this->serverLog("Valid horizontal formation found", [$leftUnit, $centerUnit, $rightUnit]);
-            return [$leftUnit, $centerUnit, $rightUnit];
-        }
-
-        // Check vertical formation
+        // Check vertical formations
         $topUnit = $this->findBattleshipAtPosition($nearbyBattleships, $centerX, $centerY - 1);
         $bottomUnit = $this->findBattleshipAtPosition($nearbyBattleships, $centerX, $centerY + 1);
+        $farBottomUnit = $this->findBattleshipAtPosition($nearbyBattleships, $centerX, $centerY + 2);
 
-        if ($topUnit && $bottomUnit) {
-            $this->serverLog("Valid vertical formation found", [$topUnit, $centerUnit, $bottomUnit]);
-            return [$topUnit, $centerUnit, $bottomUnit];
-        }
+        // Check horizontal formations
+        $leftUnit = $this->findBattleshipAtPosition($nearbyBattleships, $centerX - 1, $centerY);
+        $rightUnit = $this->findBattleshipAtPosition($nearbyBattleships, $centerX + 1, $centerY);
+        $farRightUnit = $this->findBattleshipAtPosition($nearbyBattleships, $centerX + 2, $centerY);
 
-        // Check L-shape formations
-        $lShapeFormations = [
-            [$leftUnit, $topUnit],
-            [$leftUnit, $bottomUnit],
-            [$rightUnit, $topUnit],
-            [$rightUnit, $bottomUnit]
+        // Check diagonal units for L-shape formations
+        $topRightUnit = $this->findBattleshipAtPosition($nearbyBattleships, $centerX + 1, $centerY - 1);
+        $bottomRightUnit = $this->findBattleshipAtPosition($nearbyBattleships, $centerX + 1, $centerY + 1);
+
+        $this->serverLog("Adjacent Units", [
+            'Top' => $topUnit, 'Bottom' => $bottomUnit, 'Left' => $leftUnit, 'Right' => $rightUnit,
+            'FarBottom' => $farBottomUnit, 'FarRight' => $farRightUnit,
+            'TopRight' => $topRightUnit, 'BottomRight' => $bottomRightUnit
+        ]);
+
+        // Check all possible formations
+        $formations = [
+            // Vertical formations
+            [$topUnit, $centerUnit, $bottomUnit],
+            [$centerUnit, $bottomUnit, $farBottomUnit],
+            // Horizontal formations
+            [$leftUnit, $centerUnit, $rightUnit],
+            [$centerUnit, $rightUnit, $farRightUnit],
+            // L-shape formations
+            [$centerUnit, $rightUnit, $topRightUnit],
+            [$centerUnit, $rightUnit, $bottomRightUnit],
+            [$topUnit, $centerUnit, $rightUnit],
+            [$bottomUnit, $centerUnit, $rightUnit],
+            // Inverse L-shape formations
+            [$topRightUnit, $rightUnit, $centerUnit],
+            [$bottomRightUnit, $rightUnit, $centerUnit],
+            [$rightUnit, $topUnit, $centerUnit],
+            [$rightUnit, $bottomUnit, $centerUnit],
         ];
 
-        foreach ($lShapeFormations as $formation) {
-            if ($formation[0] && $formation[1]) {
-                $this->serverLog("Valid L-shape formation found", [$formation[0], $centerUnit, $formation[1]]);
-                return [$formation[0], $centerUnit, $formation[1]];
+        foreach ($formations as $formation) {
+            if ($formation[0] && $formation[1] && $formation[2]) {
+                $this->serverLog("Valid formation found", $formation);
+                return $formation;
             }
         }
 
@@ -740,66 +787,11 @@ class Fortify extends Table
         return null;
     }
 
-    private function checkFormationWithFortifiedBattleships($centerUnit, $nearbyBattleships)
-    {
-        $centerX = intval($centerUnit['x']);
-        $centerY = intval($centerUnit['y']);
-
-        $this->serverLog("Checking formation with center at ($centerX, $centerY)", "");
-
-        // Check horizontal formation
-        $leftUnit = $this->findBattleshipAtPosition($nearbyBattleships, $centerX - 1, $centerY);
-        $rightUnit = $this->findBattleshipAtPosition($nearbyBattleships, $centerX + 1, $centerY);
-
-        if ($leftUnit && $rightUnit) {
-            $this->serverLog("Found horizontal units", "");
-            if ($leftUnit['is_fortified'] == '1' || $rightUnit['is_fortified'] == '1' || $centerUnit['is_fortified'] == '1') {
-                $this->serverLog("Valid horizontal formation found", [$leftUnit, $centerUnit, $rightUnit]);
-                return [$leftUnit, $centerUnit, $rightUnit];
-            }
-        } else if ($leftUnit) {
-            $farLeftUnit = $this->findBattleshipAtPosition($nearbyBattleships, $centerX - 2, $centerY);
-            if ($farLeftUnit) {
-                if ($farLeftUnit['is_fortified'] == '1' || $leftUnit['is_fortified'] == '1' || $centerUnit['is_fortified'] == '1') {
-                    $this->serverLog("Valid horizontal formation found", [$farLeftUnit, $leftUnit, $centerUnit]);
-                    return [$farLeftUnit, $leftUnit, $centerUnit];
-                }
-            }
-        } else if ($rightUnit) {
-            $farRightUnit = $this->findBattleshipAtPosition($nearbyBattleships, $centerX + 2, $centerY);
-            if ($farRightUnit) {
-                if ($farRightUnit['is_fortified'] == '1' || $rightUnit['is_fortified'] == '1' || $centerUnit['is_fortified'] == '1') {
-                    $this->serverLog("Valid horizontal formation found", [$centerUnit, $rightUnit, $farRightUnit]);
-                    return [$centerUnit, $rightUnit, $farRightUnit];
-                }
-            }
-        }
-
-        // Check vertical formation (unchanged)
-        $topUnit = $this->findBattleshipAtPosition($nearbyBattleships, $centerX, $centerY - 1);
-        $bottomUnit = $this->findBattleshipAtPosition($nearbyBattleships, $centerX, $centerY + 1);
-        $this->serverLog("Top Unit", $topUnit);
-        $this->serverLog("Bottom Unit", $bottomUnit);
-
-        if ($topUnit && $bottomUnit) {
-            $this->serverLog("Found vertical units", "");
-            if ($topUnit['is_fortified'] == '1' || $bottomUnit['is_fortified'] == '1' || $centerUnit['is_fortified'] == '1') {
-                $this->serverLog("Valid vertical formation found", [$topUnit, $centerUnit, $bottomUnit]);
-                return [$topUnit, $centerUnit, $bottomUnit];
-            }
-        }
-
-        $this->serverLog("No valid formation with fortified battleships found", "");
-        return null;
-    }
-
     private function getNearbyBattleships($centerUnit)
     {
         $sql = "SELECT unit_id, x, y, type, is_fortified FROM units 
-            WHERE player_id = " . self::escapeString($centerUnit['player_id']) . "
-            AND type = 'battleship'
-            AND ((ABS(x - " . $centerUnit['x'] . ") <= 2 AND ABS(y - " . $centerUnit['y'] . ") <= 2)
-            AND NOT (x = " . $centerUnit['x'] . " AND y = " . $centerUnit['y'] . "))";
+        WHERE player_id = " . self::escapeString($centerUnit['player_id']) . "
+        AND type = 'battleship'";
         $result = self::getObjectListFromDB($sql);
         $this->serverLog("getNearbyBattleships SQL", $sql);
         $this->serverLog("getNearbyBattleships result", $result);
@@ -810,6 +802,7 @@ class Fortify extends Table
     {
         foreach ($battleships as $battleship) {
             if (intval($battleship['x']) == $x && intval($battleship['y']) == $y) {
+                $this->serverLog("Battleship found at position ($x, $y)", $battleship);
                 return $battleship;
             }
         }
@@ -1211,6 +1204,239 @@ class Fortify extends Table
         // Any end-of-turn logic here
 
         $this->gamestate->nextState('next');
+    }
+
+    // Game end conditions
+
+    private function checkGameEnd()
+    {
+        $this->serverLog("entered checkGameEnd method", "");
+
+        $players = self::loadPlayersBasicInfos();
+        $activePlayerId = self::getActivePlayerId();
+        $endVolley = false;
+        $isFirstRound = $this->getGameStateValue('isFirstRound');
+        $this->serverLog("isFirstRound inside checkgameend", $isFirstRound);
+        $isVeryFirstTurn = $this->getGameStateValue('isVeryFirstTurn');
+        $this->serverLog("isVeryFirstTurn inside checkgameend", $isVeryFirstTurn);
+
+        // Check for 2x2 fortification
+        if ($this->check2x2Fortification($activePlayerId)) {
+            $endVolley = true;
+            self::notifyAllPlayers('debug', '2x2 fortification achieved', array());
+        }
+
+        // Check if all 12 units are fortified
+        if (!$endVolley && $this->checkAllUnitsFortified($activePlayerId)) {
+            $endVolley = true;
+            self::notifyAllPlayers('debug', 'All units fortified', array());
+        }
+
+        if ($endVolley) {
+            $this->volleyCount++;
+            $this->playerVolleyWins[$activePlayerId] = isset($this->playerVolleyWins[$activePlayerId])
+                ? $this->playerVolleyWins[$activePlayerId] + 1
+                : 1;
+
+            // Check if a player has won 2 volleys
+            foreach ($this->playerVolleyWins as $playerId => $wins) {
+                if ($wins == 2) {
+                    // End the game
+                    $this->gamestate->nextState('endGame');
+                    return true;
+                }
+            }
+
+            // Start a new volley
+            if ($this->volleyCount < 3) {
+                $this->gamestate->nextState('newVolley');
+                return true;
+            } else {
+                // End the game if 3 volleys have been played
+                $this->gamestate->nextState('endGame');
+                return true;
+            }
+        }
+    }
+
+    private function check2x2Fortification($playerId)
+    {
+        // Implementation for checking 2x2 fortification
+        // This is a simplified version, you may need to adjust based on your board representation
+        $board = $this->getBoard();
+        for ($x = 0; $x < 3; $x++) {
+            for ($y = 0; $y < 4; $y++) {
+                if ($this->checkFortifiedSquare($board, $x, $y, $playerId)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private function checkFortifiedSquare($board, $x, $y, $playerId)
+    {
+        for ($i = $x; $i < $x + 2; $i++) {
+            for ($j = $y; $j < $y + 2; $j++) {
+                if (!isset($board[$i][$j]) || $board[$i][$j]['player_id'] != $playerId || !$board[$i][$j]['is_fortified']) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private function checkAllUnitsFortified($playerId)
+    {
+        $sql = "SELECT COUNT(*) as count FROM units WHERE player_id = $playerId";
+        $totalUnits = self::getUniqueValueFromDB($sql);
+
+        $sql = "SELECT COUNT(*) as count FROM units WHERE player_id = $playerId AND is_fortified = 1";
+        $fortifiedUnits = self::getUniqueValueFromDB($sql);
+
+        return $totalUnits == 12 && $totalUnits == $fortifiedUnits;
+    }
+
+    private function startNewVolley()
+    {
+        // Swap player colors
+        $players = self::loadPlayersBasicInfos();
+        $colors = array('red', 'green');
+        $i = 0;
+        foreach ($players as $playerId => $player) {
+            $newColor = $colors[($i + 1) % 2];
+            $sql = "UPDATE player SET player_color='$newColor' WHERE player_id=$playerId";
+            self::DbQuery($sql);
+            $i++;
+        }
+
+        // Reset the board
+        self::DbQuery("DELETE FROM units");
+        self::DbQuery("DELETE FROM reinforcement_track");
+
+        // Notify players about new volley
+        self::notifyAllPlayers('newVolley', clienttranslate('A new volley begins! Players have switched colors.'), array(
+            'volleyCount' => $this->volleyCount
+        ));
+
+        // Move to setup state for the new volley
+        $this->gamestate->nextState('newVolley');
+    }
+
+    private function getBoard()
+    {
+        $sql = "SELECT unit_id, type, player_id, x, y, is_fortified FROM units";
+        $result = self::getObjectListFromDB($sql);
+
+        $board = array();
+        foreach ($result as $unit) {
+            $board[$unit['x']][$unit['y']] = $unit;
+        }
+
+        return $board;
+    }
+
+    function stNewVolley()
+    {
+        // Reset the game for a new volley
+        $this->setupNewVolley();
+        //$this->gamestate->nextState('');
+    }
+
+    function stFinalScore()
+    {
+        // Calculate final scores
+        $players = self::loadPlayersBasicInfos();
+        foreach ($players as $playerId => $player) {
+            $score = isset($this->playerVolleyWins[$playerId]) ? $this->playerVolleyWins[$playerId] : 0;
+            $sql = "UPDATE player SET player_score = $score WHERE player_id = $playerId";
+            self::DbQuery($sql);
+        }
+
+        $this->gamestate->nextState('');
+    }
+
+    private function setupNewVolley()
+    {
+        // 1. Swap player colors
+        $players = self::loadPlayersBasicInfos();
+        $colors = array('red', 'green');
+        $i = 0;
+        foreach ($players as $playerId => $player) {
+            $newColor = $colors[($i + 1) % 2];
+            $sql = "UPDATE player SET player_color='$newColor' WHERE player_id=$playerId";
+            self::DbQuery($sql);
+            $i++;
+        }
+
+        // 2. Clear the board
+        self::DbQuery("DELETE FROM units");
+
+        // 3. Clear the reinforcement track
+        self::DbQuery("DELETE FROM reinforcement_track");
+
+        // 4. Reset player decks
+        foreach ($players as $playerId => $player) {
+            $color = $player['player_color'];
+
+            // Add infantry units
+            for ($i = 1; $i <= 4; $i++) {
+                $unitId = "infantry_{$color}_{$i}";
+                $sql = "INSERT INTO units (unit_id, type, player_id, x, y, is_fortified) VALUES ('$unitId', 'infantry', $playerId, -1, -1, 0)";
+                self::DbQuery($sql);
+            }
+
+            // Add tank units
+            for ($i = 1; $i <= 4; $i++) {
+                $unitId = "tank_{$color}_{$i}";
+                $sql = "INSERT INTO units (unit_id, type, player_id, x, y, is_fortified) VALUES ('$unitId', 'tank', $playerId, -1, -1, 0)";
+                self::DbQuery($sql);
+            }
+
+            // Add battleship units
+            for ($i = 1; $i <= 4; $i++) {
+                $unitId = "battleship_{$color}_{$i}";
+                $sql = "INSERT INTO units (unit_id, type, player_id, x, y, is_fortified) VALUES ('$unitId', 'battleship', $playerId, -1, -1, 0)";
+                self::DbQuery($sql);
+            }
+
+            // Add special units if game variant is "Special Warfare"
+            if (self::getGameStateValue('gameVariant') == 3) {
+                $unitId = "chopper_{$color}_1";
+                $sql = "INSERT INTO units (unit_id, type, player_id, x, y, is_fortified) VALUES ('$unitId', 'chopper', $playerId, -1, -1, 0)";
+                self::DbQuery($sql);
+
+                $unitId = "artillery_{$color}_1";
+                $sql = "INSERT INTO units (unit_id, type, player_id, x, y, is_fortified) VALUES ('$unitId', 'artillery', $playerId, -1, -1, 0)";
+                self::DbQuery($sql);
+            }
+        }
+
+        // 5. Reset game state values
+        self::setGameStateValue('isFirstRound', 1);
+        self::setGameStateValue('isVeryFirstTurn', 1);
+        self::setGameStateValue('actionsRemaining', 1);
+
+        // 6. Notify players about the new volley
+        self::notifyAllPlayers('newVolley', clienttranslate('A new volley begins! Players have switched colors.'), array(
+            'volleyCount' => $this->volleyCount,
+            'players' => $players
+        ));
+
+        // 7. Update player panels
+        foreach ($players as $playerId => $player) {
+            self::notifyAllPlayers('updatePlayerPanel', '', array(
+                'player_id' => $playerId,
+                'player_color' => $player['player_color']
+            ));
+        }
+
+        // 8. Reset the active player to the first player
+        $newFirstPlayerId = array_keys($players)[0];
+        $this->gamestate->changeActivePlayer($newFirstPlayerId);
+
+        // 9. Prepare for the first turn of the new volley
+        $this->gamestate->nextState('');
     }
 
 

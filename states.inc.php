@@ -3,7 +3,7 @@
 /**
  *------
  * BGA framework: Gregory Isabelli & Emmanuel Colin & BoardGameArena
- * Fortify implementation : © <Your name here> <Your email address here>
+ * Fortify implementation : © Nirmatt Gopal nrmtgpl@gmail.com
  *
  * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
  * See http://en.boardgamearena.com/#!doc/Studio for more information.
@@ -62,7 +62,7 @@ $machinestates = array(
         "action" => "stGameSetup",
         "transitions" => array("" => ST_PLAYER_F_TURN)
     ),
-    
+
     // Player must enlist in first turn
     ST_PLAYER_F_TURN => array(
         "name" => "playerFirstTurn",
@@ -72,7 +72,7 @@ $machinestates = array(
         "args" => "argPlayerTurn",
         "possibleactions" => array("enlist", "move", "fortify", "attack", "pass"),
         "transitions" => array(
-            "nextPlayerFirstTurn" => ST_NEXT_PLAYER,
+            "nextPlayer" => ST_NEXT_PLAYER,
             "playerFirstTurn" => ST_PLAYER_F_TURN,
             "endTurn" => ST_NEXT_PLAYER
         )
@@ -85,6 +85,7 @@ $machinestates = array(
         "type" => "activeplayer",
         "possibleactions" => array("enlist"),
         "transitions" => array(
+            "nextPlayer" => ST_NEXT_PLAYER,
             "playerFirstTurn" => ST_PLAYER_F_TURN
         )
     ),
@@ -100,7 +101,9 @@ $machinestates = array(
         "transitions" => array(
             "nextPlayer" => ST_NEXT_PLAYER,
             "endTurn" => ST_NEXT_PLAYER,
-            "stayInState" => ST_PLAYER_TURN  // Add this line
+            "stayInState" => ST_PLAYER_TURN,
+            "newVolley" => ST_NEW_VOLLEY,
+            "endGame" => ST_END_GAME 
         )
     ),
 
@@ -112,8 +115,37 @@ $machinestates = array(
         "transitions" => array(
             "playerFirstTurn" => ST_PLAYER_F_TURN,
             "playerFirstEnlist" => ST_PLAYER_F_ENLIST,
-            "playerTurn" => ST_PLAYER_TURN
+            "playerTurn" => ST_PLAYER_TURN,
+            "endGame" => ST_END_GAME,
+            "newVolley" => ST_NEW_VOLLEY
         )
+    ),
+
+    ST_NEW_VOLLEY => array(
+        "name" => "newVolley",
+        "description" => clienttranslate("Starting a new volley"),
+        "type" => "game",
+        "action" => "stNewVolley",
+        "transitions" => array(
+            "" => ST_PLAYER_F_TURN
+        )
+    ),
+
+    ST_END_GAME => array(
+        "name" => "endGame",
+        "description" => clienttranslate("End of game"),
+        "type" => "manager",
+        "action" => "stEndGame",
+        "args" => "argEndGame",
+        "transitions" => array("" => ST_FINAL_SCORE)
+    ),
+
+    ST_FINAL_SCORE => array(
+        "name" => "finalScore",
+        "description" => clienttranslate("Game end"),
+        "type" => "game",
+        "action" => "stFinalScore",
+        "transitions" => array("" => ST_END_GAME)
     ),
 
     // Final state.
@@ -127,3 +159,7 @@ $machinestates = array(
     )
 
 );
+
+$machinestates[ST_PLAYER_TURN]['transitions']['endGame'] = ST_END_GAME;
+$machinestates[ST_NEXT_PLAYER]['transitions']['endGame'] = ST_END_GAME;
+$machinestates[ST_NEXT_PLAYER]['transitions']['newVolley'] = ST_NEW_VOLLEY;

@@ -148,18 +148,19 @@ define([
             },
 
             addEventListenserForActionButtons: function (possibleActions) {
+                if (possibleActions) {
+                    if (possibleActions.indexOf('enlist') == 0)
+                        dojo.query('#btnEnlist').connect('onclick', this, dojo.hitch(this, 'enlist'));
 
-                if (possibleActions.indexOf('enlist') == 0)
-                    dojo.query('#btnEnlist').connect('onclick', this, dojo.hitch(this, 'enlist'));
+                    if (possibleActions.indexOf('fortify') == 0)
+                        dojo.query('#btnFortify').connect('onclick', this, dojo.hitch(this, 'fortify'));
 
-                if (possibleActions.indexOf('fortify') == 0)
-                    dojo.query('#btnFortify').connect('onclick', this, dojo.hitch(this, 'fortify'));
+                    if (possibleActions.indexOf('attack') == 0)
+                        dojo.query('#btnAttack').connect('onclick', this, dojo.hitch(this, 'attack'));
 
-                if (possibleActions.indexOf('attack') == 0)
-                    dojo.query('#btnAttack').connect('onclick', this, dojo.hitch(this, 'attack'));
-
-                if (possibleActions.indexOf('move') == 0)
-                    dojo.query('#btnMove').connect('onclick', this, dojo.hitch(this, 'move'));
+                    if (possibleActions.indexOf('move') == 0)
+                        dojo.query('#btnMove').connect('onclick', this, dojo.hitch(this, 'move'));
+                }
             },
 
             handleUnitClick: function (event) {
@@ -669,6 +670,16 @@ define([
                     // This might involve checking for valid formations
                     return this.checkValidFormation(unit);
                 }
+            },
+
+            divYou: function() {
+                var color = this.gamedatas.players[this.player_id].color;
+                var color_bg = "";
+                if (this.gamedatas.players[this.player_id] && this.gamedatas.players[this.player_id].color_back) {
+                    color_bg = "background-color:#" + this.gamedatas.players[this.player_id].color_back + ";";
+                }
+                var you = "<span style=\"font-weight:bold;color:#" + color + ";" + color_bg + "\">" + __("lang_mainsite", "You") + "</span>";
+                return you;
             },
 
             ///////////////////////////////////////////////////
@@ -1184,27 +1195,15 @@ define([
                         this.selectedSpecialUnit = null;
                         dojo.removeClass('btnAttack', 'active');
                         dojo.style($('btnAttack'), 'display', 'none');
+                        this.clearHighlights();
                     }, function (is_error) {
-                            if (is_error) {
-                                dojo.removeClass('btnAttack', 'active');
-                                dojo.style($('btnAttack'), 'display', 'none');
-                            }
-                        });
+                        if (is_error) {
+                            dojo.removeClass('btnAttack', 'active');
+                            dojo.style($('btnAttack'), 'display', 'none');
+                        }
+                    });
                 }
             },
-
-            // tryAttack: function (attackingUnitId, defendingUnitId) {
-            //     if (this.checkAction('attack')) {
-            //         this.ajaxcall("/fortify/fortify/attack.html", {
-            //             attackingUnitId: attackingUnitId,
-            //             defendingUnitId: defendingUnitId,
-            //             lock: true
-            //         }, this, function (result) {
-            //             // Handle successful attack
-            //             this.clearSelection();
-            //         });
-            //     }
-            // },
 
             removeButtonHighlight: function () {
                 let allActionButtons = document.querySelectorAll(".btn-active");
@@ -1215,39 +1214,62 @@ define([
                     });
                 }
             },
-            /* Example:
-            
-            onMyMethodToCall1: function( evt )
-            {
-                console.log( 'onMyMethodToCall1' );
-                
-                // Preventing default browser reaction
-                dojo.stopEvent( evt );
-    
-                // Check that this action is possible (see "possibleactions" in states.inc.php)
-                if( ! this.checkAction( 'myAction' ) )
-                {   return; }
-    
-                this.ajaxcall( "/fortify/fortify/myAction.html", { 
-                                                                        lock: true, 
-                                                                        myArgument1: arg1, 
-                                                                        myArgument2: arg2,
-                                                                        ...
-                                                                     }, 
-                             this, function( result ) {
-                                
-                                // What to do after the server call if it succeeded
-                                // (most of the time: nothing)
-                                
-                             }, function( is_error) {
-    
-                                // What to do after the server call in anyway (success or failure)
-                                // (most of the time: nothing)
-    
-                             } );        
-            },        
-            
-            */
+
+            resetBoard: function () {
+                // Remove all units from the board
+                dojo.query('.board-slot .unit').forEach(dojo.destroy);
+
+                // Clear the reinforcement track
+                dojo.query('#reinforcement_track .reinforcement_slot').forEach(function (slot) {
+                    dojo.empty(slot);
+                });
+
+                // Reset player decks
+                this.resetPlayerDecks();
+
+                // Clear any highlights or selections
+                dojo.query('.highlighted').removeClass('highlighted');
+                dojo.query('.selected').removeClass('selected');
+
+                // Reset any game state variables
+                this.selectedUnit = null;
+                this.selectedSpecialUnit = null;
+                this.fortifyMode = false;
+                this.attackMode = false;
+
+                // Reset action buttons
+                this.updateActionButtons('');
+            },
+
+            resetPlayerDecks: function () {
+                var players = this.gamedatas.players;
+                for (var playerId in players) {
+                    var color = players[playerId].color;
+                    var deckId = (playerId == this.player_id) ? 'player_deck_bottom' : 'player_deck_top';
+                    var deck = $(deckId);
+
+                    // Clear existing units
+                    dojo.empty(deck);
+
+                    // Add new units to the deck
+                    this.addUnitsToDeck(deck, 'infantry', color, 4);
+                    this.addUnitsToDeck(deck, 'tank', color, 4);
+                    this.addUnitsToDeck(deck, 'battleship', color, 4);
+
+                    if (this.gameVariant == 3) {  // Special Warfare variant
+                        this.addUnitsToDeck(deck, 'chopper', color, 1);
+                        this.addUnitsToDeck(deck, 'artillery', color, 1);
+                    }
+                }
+            },
+
+            addUnitsToDeck: function (deck, unitType, color, count) {
+                for (var i = 1; i <= count; i++) {
+                    var unitId = unitType + '_' + color + '_' + i;
+                    var unitDiv = this.createUnitDiv(unitId, unitType, color);
+                    dojo.place(unitDiv, deck);
+                }
+            },
 
 
             ///////////////////////////////////////////////////
@@ -1272,10 +1294,66 @@ define([
                 dojo.subscribe('unitAttacked', this, "notif_unitAttacked");
                 dojo.subscribe('unitReturnedToSupply', this, "notif_unitReturnedToSupply");
                 dojo.subscribe('reinforcementTrackUpdated', this, "notif_reinforcementTrackUpdated");
+                dojo.subscribe('newVolley', this, "notif_newVolley");
+                dojo.subscribe('updatePlayerPanel', this, "notif_updatePlayerPanel");
             },
+
+            notif_newVolley: function (notif) {
+                debugger;
+                // Reset the board
+                //this.resetBoard();
+                this.setup(this.gamedatas);
+                // Update player colors and decks
+                for (var playerId in notif.args.players) {
+                    var player = notif.args.players[playerId];
+                    this.updatePlayerColor(playerId, player.player_color);
+                    this.resetPlayerDeck(playerId, player.player_color);
+                }
+
+                // Show a message about the new volley
+                this.showMessage(_("A new volley begins! Players have switched colors."), 'info');
+            },
+            notif_updatePlayerPanel: function (notif) {
+                this.updatePlayerColor(notif.args.player_id, notif.args.player_color);
+            },
+
+            updatePlayerColor: function (playerId, color) {
+                // Update player board color
+                dojo.removeClass('player_board_' + playerId, 'player_color_red player_color_green');
+                dojo.addClass('player_board_' + playerId, 'player_color_' + color);
+
+                // Update any other UI elements that depend on player color
+            },
+
+            resetPlayerDeck: function (playerId, color) {
+                // Clear existing deck
+                var deckId = (playerId == this.player_id) ? 'player_deck_bottom' : 'player_deck_top';
+                dojo.empty(deckId);
+
+                // Add new units to the deck
+                this.addUnitsToDeck(deckId, 'infantry', color, 4);
+                this.addUnitsToDeck(deckId, 'tank', color, 4);
+                this.addUnitsToDeck(deckId, 'battleship', color, 4);
+
+                // Add special units if applicable
+                if (this.gamedatas.gameVariant == 3) {
+                    this.addUnitsToDeck(deckId, 'chopper', color, 1);
+                    this.addUnitsToDeck(deckId, 'artillery', color, 1);
+                }
+            },
+
+            addUnitsToDeck: function (deckId, unitType, color, count) {
+                for (var i = 1; i <= count; i++) {
+                    var unitId = unitType + '_' + color + '_' + i;
+                    var unitDiv = this.createUnitDiv(unitId, unitType, color);
+                    dojo.place(unitDiv, deckId);
+                }
+            },
+
             notif_actionsRemaining: function (notif) {
                 this.updateActionCounter(notif.args.actionsRemaining);
             },
+
             notif_unitEnlisted: function (notif) {
 
                 console.log('Notification received: unitEnlisted', notif);
