@@ -62,7 +62,7 @@ define([
                 }
 
                 // Initialize the game board
-                this.initBoard(gamedatas);
+                //this.initBoard(gamedatas);
 
                 // Initialize player decks
                 this.initPlayerDecks(gamedatas);
@@ -672,7 +672,7 @@ define([
                 }
             },
 
-            divYou: function() {
+            divYou: function () {
                 var color = this.gamedatas.players[this.player_id].color;
                 var color_bg = "";
                 if (this.gamedatas.players[this.player_id] && this.gamedatas.players[this.player_id].color_back) {
@@ -1225,7 +1225,7 @@ define([
                 });
 
                 // Reset player decks
-                this.resetPlayerDecks();
+                //this.resetPlayerDecks();
 
                 // Clear any highlights or selections
                 dojo.query('.highlighted').removeClass('highlighted');
@@ -1239,6 +1239,35 @@ define([
 
                 // Reset action buttons
                 this.updateActionButtons('');
+
+                this.initPlayerDecks(this.gamedatas);
+
+                // Setup game notifications to handle (see "setupNotifications" method below)
+                this.setupNotifications();
+
+                // Add event listeners to the units
+                dojo.query('.unit').connect('onclick', this, dojo.hitch(this, 'handleUnitClick'));
+
+                // Add event listener for slots
+                dojo.query('.board-slot').connect('onclick', this, dojo.hitch(this, 'handleSlotClick'));
+                //dojo.connect($('btnMove'), 'onclick', this, 'startMoveAction');
+                dojo.connect($('btnFortify'), 'onclick', this, 'onFortifyButtonClick');
+
+                dojo.hitch(this, this.highlightValidMoves)();
+
+                this.addEventListenserForActionButtons(this.gamedatas.gamestate.possibleactions);
+
+                for (var i in this.gamedatas.units) {
+                    var unit = this.gamedatas.units[i];
+                    this.placeUnitOnBoard(unit.unit_id, unit.type, unit.x, unit.y, unit.player_id, unit.is_fortified);
+                }
+
+                // Initialize the reinforcement track
+                if (this.gamedatas.reinforcementTrack)
+                    this.updateReinforcementTrack(this.gamedatas.reinforcementTrack);
+
+                // Add event listener for the attack button
+                dojo.connect($('btnAttack'), 'onclick', this, 'onAttackButtonClick');
             },
 
             resetPlayerDecks: function () {
@@ -1301,8 +1330,8 @@ define([
             notif_newVolley: function (notif) {
                 debugger;
                 // Reset the board
-                //this.resetBoard();
-                this.setup(this.gamedatas);
+                this.resetBoard();
+                //this.setup(this.gamedatas);
                 // Update player colors and decks
                 for (var playerId in notif.args.players) {
                     var player = notif.args.players[playerId];
