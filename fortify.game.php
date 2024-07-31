@@ -439,7 +439,7 @@ class Fortify extends Table
         $fromY = $unit['y'];
 
         // Check if the move is valid
-        if ($unitType != 'chopper' && !$this->isValidMove($player_color, $fromX, $fromY, $toX, $toY)) {
+        if ($unitType != 'tank' && $unitType != 'chopper' && !$this->isValidMove($player_color, $fromX, $fromY, $toX, $toY)) {
             throw new BgaUserException(self::_("Invalid move"));
         }
 
