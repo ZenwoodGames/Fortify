@@ -834,11 +834,11 @@ class Fortify extends Table
     private function checkInfantryFormation($centerUnit, $adjacentUnits)
     {
         // Find adjacent infantry units
-        $adjacentInfantry = array_filter($adjacentUnits, function ($unit) {
-            return $unit['type'] == 'infantry';
+        $adjacentInfantry = array_filter($adjacentUnits, function ($unit) use ($centerUnit) {
+            return $unit['type'] == 'infantry' && $unit['player_id'] == $centerUnit['player_id'];
         });
 
-        // If there's no adjacent infantry, return null
+        // If there's no adjacent friendly infantry, return null
         if (empty($adjacentInfantry)) {
             return null;
         }
@@ -847,10 +847,16 @@ class Fortify extends Table
             $potentialFormation = [$centerUnit, $partnerInfantry];
 
             // Check if either the center unit or partner infantry is adjacent to a fortified friendly unit
-            $fortifiedAdjacent = $this->findAdjacentFortifiedUnit($centerUnit, $adjacentUnits)
-                || $this->findAdjacentFortifiedUnit($partnerInfantry, $adjacentUnits);
+            if (
+                $this->isAdjacentToFortifiedFriendlyUnit($centerUnit, $adjacentUnits) ||
+                $this->isAdjacentToFortifiedFriendlyUnit($partnerInfantry, $adjacentUnits)
+            ) {
+                return $potentialFormation;
+            }
 
-            if ($fortifiedAdjacent) {
+            // Check if there's a fortified friendly unit adjacent to either infantry
+            $allAdjacentUnits = array_merge($this->getAdjacentUnits($centerUnit), $this->getAdjacentUnits($partnerInfantry));
+            if ($this->hasFortifiedFriendlyUnit($allAdjacentUnits, $centerUnit['player_id'])) {
                 return $potentialFormation;
             }
         }
@@ -858,10 +864,30 @@ class Fortify extends Table
         return null;
     }
 
-    private function findAdjacentFortifiedUnit($unit, $adjacentUnits)
+    private function isAdjacentToFortifiedFriendlyUnit($unit, $adjacentUnits)
     {
         foreach ($adjacentUnits as $adjacentUnit) {
-            if ($adjacentUnit['is_fortified'] == '1' && $this->isAdjacent($unit, $adjacentUnit)) {
+            if ($adjacentUnit['is_fortified'] == '1' && $adjacentUnit['player_id'] == $unit['player_id']) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private function hasFortifiedFriendlyUnit($units, $playerId)
+    {
+        foreach ($units as $unit) {
+            if ($unit['is_fortified'] == '1' && $unit['player_id'] == $playerId) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private function isAdjacentToFortifiedUnit($unit, $adjacentUnits)
+    {
+        foreach ($adjacentUnits as $adjacentUnit) {
+            if ($adjacentUnit['is_fortified'] == '1' && $adjacentUnit['player_id'] == $unit['player_id']) {
                 return true;
             }
         }
@@ -942,9 +968,8 @@ class Fortify extends Table
 
     private function getAdjacentUnits($unit)
     {
-        $sql = "SELECT unit_id, x, y, type, is_fortified FROM units 
-            WHERE player_id = " . self::escapeString($unit['player_id']) . "
-            AND (
+        $sql = "SELECT unit_id, x, y, type, player_id, is_fortified FROM units 
+            WHERE (
                 (ABS(x - " . $unit['x'] . ") <= 1 AND ABS(y - " . $unit['y'] . ") <= 1)
                 AND NOT (x = " . $unit['x'] . " AND y = " . $unit['y'] . ")
             )";
