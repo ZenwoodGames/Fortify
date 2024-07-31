@@ -753,9 +753,9 @@ define([
                 this.updateActionButtons('');
             },
             onFortifyButtonClick: function (evt) {
-                // if (!this.checkAction('fortify')) {
-                //     return;
-                // }
+                if (!this.checkAction('fortify')) {
+                    return;
+                }
 
                 if (!this.fortifyMode) {
                     this.fortifyMode = true;
