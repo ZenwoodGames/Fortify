@@ -1109,6 +1109,15 @@ define([
                     });
                 }
                 else {
+                    // Special movement rule for tanks
+                    if (selectedUnitDetails.type === 'tank') {
+                        // Highlight all empty land and shore spaces for tanks
+                        document.querySelectorAll('.board-slot:not(:has(.unit))').forEach(slot => {
+                            if (slot.classList.contains('land') || slot.classList.contains('shore')) {
+                                slot.classList.add('highlighted');
+                            }
+                        });
+                    } else {
                     // Highlight orthogonal adjacent empty spaces
                     var orthogonalDirections = [
                         { dx: 0, dy: -1 }, // up
@@ -1177,6 +1186,7 @@ define([
                             }
                         });
                     });
+                    }
                 }
             },
 
