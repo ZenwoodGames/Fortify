@@ -724,11 +724,14 @@ class Fortify extends Table
         // Check diagonal units for L-shape formations
         $topRightUnit = $this->findBattleshipAtPosition($nearbyBattleships, $centerX + 1, $centerY - 1);
         $bottomRightUnit = $this->findBattleshipAtPosition($nearbyBattleships, $centerX + 1, $centerY + 1);
+        $topLeftUnit = $this->findBattleshipAtPosition($nearbyBattleships, $centerX - 1, $centerY - 1);
+        $bottomLeftUnit = $this->findBattleshipAtPosition($nearbyBattleships, $centerX - 1, $centerY + 1);
 
         $this->serverLog("Adjacent Units", [
             'Top' => $topUnit, 'Bottom' => $bottomUnit, 'Left' => $leftUnit, 'Right' => $rightUnit,
             'FarBottom' => $farBottomUnit, 'FarRight' => $farRightUnit,
-            'TopRight' => $topRightUnit, 'BottomRight' => $bottomRightUnit
+            'TopRight' => $topRightUnit, 'BottomRight' => $bottomRightUnit,
+            'TopLeft' => $topLeftUnit, 'BottomLeft' => $bottomLeftUnit
         ]);
 
         // Check all possible formations
@@ -749,6 +752,13 @@ class Fortify extends Table
             [$bottomRightUnit, $rightUnit, $centerUnit],
             [$rightUnit, $topUnit, $centerUnit],
             [$rightUnit, $bottomUnit, $centerUnit],
+            // New L-shape formations with center at corner
+            [$centerUnit, $topUnit, $leftUnit],
+            [$centerUnit, $topUnit, $rightUnit],
+            [$centerUnit, $bottomUnit, $leftUnit],
+            [$centerUnit, $bottomUnit, $rightUnit],
+            [$centerUnit, $leftUnit, $topLeftUnit],
+            [$centerUnit, $leftUnit, $bottomLeftUnit],
         ];
 
         foreach ($formations as $formation) {
