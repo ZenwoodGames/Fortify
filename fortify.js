@@ -392,7 +392,10 @@ define([
                                 this.moveUnit(unitId, unitType, toX, toY);
                             }
                             else {
-                                this.attack(this.selectedUnit.id, event.target.id);
+                                if(event.target.classList.contains('highlight-target'))
+                                    this.attack(this.selectedUnit.id, event.target.id);
+                                else
+                                    this.showMessage(_("Not a possible move!"), 'info');
                             }
                         }
                     }
