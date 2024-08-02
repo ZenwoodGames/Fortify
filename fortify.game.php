@@ -411,13 +411,19 @@ class Fortify extends Table
         }
 
         // Decrease the action counter
-        $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
-        $this->setGameStateValue('actionsRemaining', $actionsRemaining);
+        // $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
+        // $this->setGameStateValue('actionsRemaining', $actionsRemaining);
 
         // Check if this was the first round
         $isFirstRound = $this->getGameStateValue('isFirstRound');
         $isVeryFirstTurn = $this->getGameStateValue('isVeryFirstTurn');
         $actionsRemaining = $this->getGameStateValue('actionsRemaining');
+
+        $this->serverLog("After processing", array(
+            "isFirstRound" => $isFirstRound,
+            "isVeryFirstTurn" => $isVeryFirstTurn,
+            "actionsRemaining" => $actionsRemaining
+        ));
 
         if ($isFirstRound) {
             if (($isVeryFirstTurn || $actionsRemaining == 0)) {
@@ -432,6 +438,10 @@ class Fortify extends Table
                 }
             } else {
                 // Otherwise, go to regular first round turn
+                $this->serverLog("Otherwise, go to regular first round turn", "");
+
+                $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
+                $this->setGameStateValue('actionsRemaining', $actionsRemaining);
                 $this->gamestate->nextState('playerFirstTurn');
             }
             if ($infantryEnlistCount != 1) {
@@ -445,15 +455,40 @@ class Fortify extends Table
             }
         } else {
             // Regular round logic
-            if ($actionsRemaining == 0 && $infantryEnlistCount == 0) {
-                $this->gamestate->nextState('nextPlayer');
+            $this->serverLog("Regular round logic", "");
+
+            if ($actionsRemaining == 0) {
+                if ($infantryEnlistCount == 1) {
+                    $this->serverLog("one infantry enlisted. infantryEnlistCount = ", "$infantryEnlistCount");
+                } else {
+                    $this->serverLog("No infantry to enlist. infantryEnlistCount = ", "$infantryEnlistCount");
+
+                    $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
+                    $this->setGameStateValue('actionsRemaining', $actionsRemaining);
+                    $this->gamestate->nextState('nextPlayer');
+                }
             } else {
+                $this->serverLog("More than 1 actions remaining. actionsRemaining = ", "$actionsRemaining");
+                $this->serverLog("infantryEnlistCount = ", "$infantryEnlistCount");
+
+                if ($infantryEnlistCount == 1) {
+                }
+                else{
+                    $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
+                    $this->setGameStateValue('actionsRemaining', $actionsRemaining);
+                    if($actionsRemaining == 0){
+                        $actionsRemaining = 2;
+                        $this->setGameStateValue('actionsRemaining', $actionsRemaining);
+                        $this->gamestate->nextState('nextPlayer');
+                    }
+                }
                 // Notify clients about the updated action count
                 self::notifyAllPlayers('actionsRemaining', '', array(
                     'actionsRemaining' => $actionsRemaining
                 ));
+                
                 // Stay in the current state without transitioning
-                $this->gamestate->nextState('stayInState');
+                //$this->gamestate->nextState('stayInState');
             }
         }
     }

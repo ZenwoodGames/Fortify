@@ -1500,13 +1500,13 @@ define([
                 }
 
                 // If this is not the active player's move, remove the unit from their deck
-                if (notif.args.player_id != this.player_id) {
-                    var deckElement = $('player_deck_' + (playerColor == 'red' ? 'bottom' : 'top'));
-                    var unitInDeck = deckElement.querySelector('.' + unitType + '.' + playerColor);
-                    if (unitInDeck) {
-                        dojo.destroy(unitInDeck);
-                    }
-                }
+                // if (notif.args.player_id != this.player_id) {
+                //     var deckElement = $('player_deck_' + (playerColor == 'red' ? 'bottom' : 'top'));
+                //     var unitInDeck = deckElement.querySelector('.' + unitType + '.' + playerColor);
+                //     if (unitInDeck) {
+                //         dojo.destroy(unitInDeck);
+                //     }
+                // }
                 //this.resetGameState();
             },
 
