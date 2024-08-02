@@ -221,6 +221,9 @@ class Fortify extends Table
         $player_id = self::activeNextPlayer();
         self::giveExtraTime($player_id);
 
+        // Reset the infantry enlistment count for the new active player
+        $this->setInfantryEnlistCount($player_id, 0);
+
         $isFirstRound = $this->getGameStateValue('isFirstRound');
         $isVeryFirstTurn = $this->getGameStateValue('isVeryFirstTurn');
 
@@ -264,8 +267,11 @@ class Fortify extends Table
         (note: each method below must match an input method in fortify.action.php)
     */
 
-    function enlist($unitType, $x, $y, $unitId)
+    function enlist($unitType, $x, $y, $unitId, $is_fortified)
     {
+        $this->serverLog("is_fortified", $is_fortified);
+        $is_fortified = (int)$is_fortified;
+
         // Check if it's a valid action
         if (!$this->checkAction('enlist')) {
             throw new BgaUserException(self::_("It is not your turn or this action is not allowed at this time"));
@@ -332,7 +338,8 @@ class Fortify extends Table
             }
 
             // Add the chopper on top of the battleship
-            $sql = "INSERT INTO units (type, player_id, x, y, unit_id, is_stacked) VALUES ('chopper', $player_id, $x, $y, '$unitId', 1)";
+            $sql = "INSERT INTO units (type, player_id, x, y, unit_id, is_stacked, is_fortified) 
+                    VALUES ('chopper', $player_id, $x, $y, '$unitId', 1, '$is_fortified')";
             self::DbQuery($sql);
 
             // Update the battleship to show it's being occupied
@@ -350,16 +357,45 @@ class Fortify extends Table
                 'player_color' => $player_color,
                 'special_unit_id' => 'chopper_' . $player_color . '_000'
             ]);
-            
         } else {
 
+
             // Add the unit to the board
-            $sql = "INSERT INTO units (type, player_id, x, y, unit_id) VALUES ('$unitType', $player_id, $x, $y, '$unitId')";
+            $sql = "SELECT COUNT(*) FROM units WHERE unit_id = '$unitId'";
+            $count = self::getUniqueValueFromDB($sql);
+
+            if ($count > 1) {
+                $sql = "UPDATE units SET x = $x, y = $y WHERE unit_id = '$unitId'";
+                self::DbQuery($sql);
+            }
+
+            $sql = "INSERT INTO units (type, player_id, x, y, unit_id, is_fortified) 
+                    VALUES ('$unitType', $player_id, $x, $y, '$unitId', '$is_fortified')";
             self::DbQuery($sql);
 
             // Get the player's color
             $players = self::loadPlayersBasicInfos();
             $player_color = $players[$player_id]['player_color'];
+
+            // If unit type is infantry, one more infantry unit can be enlisted for free
+            // 
+            if ($unitType == 'infantry') {
+                $infantryEnlistCount = $this->getInfantryEnlistCount($player_id);
+
+                if ($infantryEnlistCount == 0) {
+                    // This is the first infantry enlistment
+                    $this->setInfantryEnlistCount($player_id, 1);
+                    $infantryEnlistCount = 1;
+                } else {
+                    // This is the second infantry enlistment
+                    $this->setInfantryEnlistCount($player_id, 0);
+                    $infantryEnlistCount = 0;
+                }
+            } else {
+                // If it's not an infantry, reset the infantry enlist count
+                $this->setInfantryEnlistCount($player_id, 0);
+                $infantryEnlistCount = 0;
+            }
 
             // Notify all players about the new unit
             self::notifyAllPlayers('unitEnlisted', clienttranslate('${player_name} enlists a ${unit_type} at (${x},${y})'), [
@@ -369,7 +405,8 @@ class Fortify extends Table
                 'x' => $x,
                 'y' => $y,
                 'unitId' => $unitId,
-                'player_color' => $player_color
+                'player_color' => $player_color,
+                'infantryEnlistCount' => $infantryEnlistCount
             ]);
         }
 
@@ -380,31 +417,35 @@ class Fortify extends Table
         // Check if this was the first round
         $isFirstRound = $this->getGameStateValue('isFirstRound');
         $isVeryFirstTurn = $this->getGameStateValue('isVeryFirstTurn');
-
-        $this->serverLog("isFirstRound inside enlist", $isFirstRound);
-        $this->serverLog("isVeryFirstTurn inside enlist", $isVeryFirstTurn);
+        $actionsRemaining = $this->getGameStateValue('actionsRemaining');
 
         if ($isFirstRound) {
-            if ($isVeryFirstTurn || $actionsRemaining == 0) {
-                // If it's the very first turn or we've used all actions, move to next player
-                $this->serverLog("If it's the very first turn or we've used all actions, move to next player", "");
-                $this->setGameStateValue('isVeryFirstTurn', 0);
-                $this->gamestate->nextState('nextPlayer');
+            if (($isVeryFirstTurn || $actionsRemaining == 0)) {
+                if ($infantryEnlistCount == 1) {
+                    $this->serverLog("First infantry enlisted", "");
+                    //$this->gamestate->nextState('stayInState');
+                } else {
+                    // If it's the very first turn or we've used all actions, move to next player
+                    $this->serverLog("If it's the very first turn or we've used all actions, move to next player", "");
+                    $this->setGameStateValue('isVeryFirstTurn', 0);
+                    $this->gamestate->nextState('nextPlayer');
+                }
             } else {
                 // Otherwise, go to regular first round turn
                 $this->gamestate->nextState('playerFirstTurn');
             }
-
-            // Check if all players have placed their first unit
-            $sql = "SELECT COUNT(*) FROM units";
-            $unitCount = self::getUniqueValueFromDB($sql);
-            if ($unitCount == count($this->loadPlayersBasicInfos())) {
-                // If all players have placed their first unit, end first round
-                $this->setGameStateValue('isFirstRound', 0);
+            if ($infantryEnlistCount != 1) {
+                // Check if all players have placed their first unit
+                $sql = "SELECT COUNT(*) FROM units";
+                $unitCount = self::getUniqueValueFromDB($sql);
+                if ($unitCount == count($this->loadPlayersBasicInfos())) {
+                    // If all players have placed their first unit, end first round
+                    $this->setGameStateValue('isFirstRound', 0);
+                }
             }
         } else {
             // Regular round logic
-            if ($actionsRemaining == 0) {
+            if ($actionsRemaining == 0 && $infantryEnlistCount == 0) {
                 $this->gamestate->nextState('nextPlayer');
             } else {
                 // Notify clients about the updated action count
@@ -415,6 +456,28 @@ class Fortify extends Table
                 $this->gamestate->nextState('stayInState');
             }
         }
+    }
+
+    /**
+     * Get the infantry enlist count for a player
+     * 
+     * @param int $playerId The ID of the player
+     * @return int The infantry enlist count
+     */
+    private function getInfantryEnlistCount($playerId)
+    {
+        return (int)self::getUniqueValueFromDB("SELECT infantry_enlist_count FROM player WHERE player_id = $playerId");
+    }
+
+    /**
+     * Set the infantry enlist count for a player
+     * 
+     * @param int $playerId The ID of the player
+     * @param int $count The new infantry enlist count
+     */
+    private function setInfantryEnlistCount($playerId, $count)
+    {
+        self::DbQuery("UPDATE player SET infantry_enlist_count = $count WHERE player_id = $playerId");
     }
 
     function move($unitId, $unitType, $toX, $toY)
@@ -1108,16 +1171,18 @@ class Fortify extends Table
             $sql = "UPDATE reinforcement_track SET position = 1, is_fortified = " . ($unit['is_fortified'] ? '1' : '0') . " WHERE unit_id = '" . $unit['unit_id'] . "'";
             self::DbQuery($sql);
         } else {
+            $current_player_id = self::getActivePlayerId();
             // If the unit is not in the track, insert it at position 1
-            $sql = "INSERT INTO reinforcement_track (unit_id, position, is_fortified) VALUES ('" . $unit['unit_id'] . "', 1, " . ($unit['is_fortified'] ? '1' : '0') . ")";
+            $sql = "INSERT INTO reinforcement_track (unit_id, position, is_fortified, player_id) 
+                    VALUES ('" . $unit['unit_id'] . "', 1, " . ($unit['is_fortified'] ? '1' : '0') . ", $current_player_id)";
             self::DbQuery($sql);
         }
 
-        // Check if any unit has moved to position 6 (since we shifted all down by 1)
-        $sql = "SELECT rt.*, u.type, u.player_id 
+        // Check if any unit has moved to position 5 (since we shifted all down by 1)
+        $sql = "SELECT rt.*, u.type, rt.player_id 
             FROM reinforcement_track rt
-            JOIN units u ON rt.unit_id = u.unit_id
-            WHERE rt.position > 5";
+            LEFT JOIN units u ON rt.unit_id = u.unit_id
+            WHERE rt.position > 4";
         $unitsToReturn = self::getCollectionFromDb($sql);
 
         foreach ($unitsToReturn as $unitToReturn) {
@@ -1139,20 +1204,24 @@ class Fortify extends Table
     private function moveUnitToSupply($unit)
     {
         // Fetch complete unit information from the reinforcement_track table
-        $sql = "SELECT rt.*, u.type, u.player_id 
+        $sql = "SELECT rt.*, u.type, rt.player_id 
                 FROM reinforcement_track rt
-                JOIN units u ON rt.unit_id = u.unit_id
+                LEFT JOIN units u ON rt.unit_id = u.unit_id
                 WHERE rt.unit_id = '{$unit['unit_id']}'";
         $completeUnit = self::getObjectFromDB($sql);
+
+        $parts = explode("_", $completeUnit['unit_id']);
+        $type = $parts[0];
 
         if (!$completeUnit) {
             throw new BgaSystemException("Unit not found in reinforcement track: " . $unit['unit_id']);
         }
 
         // Add the unit back to the units table
-        $sql = "INSERT INTO units (id, type, player_id, x, y, unit_id, is_fortified) 
-                VALUES (NULL, '{$completeUnit['type']}', {$completeUnit['player_id']}, NULL, NULL, 
-                '{$completeUnit['unit_id']}', {$completeUnit['is_fortified']})";
+        // This is important for refresh page scenario
+        $sql = "INSERT INTO units (type, player_id, x, y, unit_id, is_fortified) 
+                VALUES ('$type', {$completeUnit['player_id']}, -1, -1, 
+                '{$completeUnit['unit_id']}', '{$completeUnit['is_fortified']}')";
         self::DbQuery($sql);
 
         // Remove the unit from the reinforcement track
@@ -1161,10 +1230,11 @@ class Fortify extends Table
 
         // Notify clients about the unit returning to supply
         self::notifyAllPlayers('unitReturnedToSupply', clienttranslate('A ${unit_type} has returned to ${player_name}\'s supply'), [
-            'unit_type' => $completeUnit['type'],
+            'unit_type' => $type,
             'player_name' => self::getPlayerNameById($completeUnit['player_id']),
             'unit_id' => $completeUnit['unit_id'],
-            'is_fortified' => $completeUnit['is_fortified']
+            'is_fortified' => $completeUnit['is_fortified'],
+            'player_id' => $completeUnit['player_id']
         ]);
     }
 
@@ -1372,54 +1442,55 @@ class Fortify extends Table
         $players = self::loadPlayersBasicInfos();
         $colors = array('red', 'green');
         $i = 0;
-        foreach ($players as $playerId => $player) {
-            $newColor = $colors[($i + 1) % 2];
-            $sql = "UPDATE player SET player_color='$newColor' WHERE player_id=$playerId";
-            self::DbQuery($sql);
-            $i++;
-        }
+        // foreach ($players as $playerId => $player) {
+        //     $newColor = $colors[($i + 1) % 2];
+        //     $sql = "UPDATE player SET player_color='$newColor' WHERE player_id=$playerId";
+        //     self::DbQuery($sql);
+        //     $i++;
+        // }
 
         // 2. Clear the board
         self::DbQuery("DELETE FROM units");
-
+        $this->serverLog("deleted all units", "");
         // 3. Clear the reinforcement track
         self::DbQuery("DELETE FROM reinforcement_track");
+        $this->serverLog("deleted all reinforcement_track", "");
 
         // 4. Reset player decks
         foreach ($players as $playerId => $player) {
             $color = $player['player_color'];
 
-            // Add infantry units
-            for ($i = 1; $i <= 4; $i++) {
-                $unitId = "infantry_{$color}_{$i}";
-                $sql = "INSERT INTO units (unit_id, type, player_id, x, y, is_fortified) VALUES ('$unitId', 'infantry', $playerId, -1, -1, 0)";
-                self::DbQuery($sql);
-            }
+            // // Add infantry units
+            // for ($i = 1; $i <= 4; $i++) {
+            //     $unitId = "infantry_{$color}_{$i}";
+            //     $sql = "INSERT INTO units (unit_id, type, player_id, x, y, is_fortified) VALUES ('$unitId', 'infantry', $playerId, -1, -1, 0)";
+            //     self::DbQuery($sql);
+            // }
 
-            // Add tank units
-            for ($i = 1; $i <= 4; $i++) {
-                $unitId = "tank_{$color}_{$i}";
-                $sql = "INSERT INTO units (unit_id, type, player_id, x, y, is_fortified) VALUES ('$unitId', 'tank', $playerId, -1, -1, 0)";
-                self::DbQuery($sql);
-            }
+            // // Add tank units
+            // for ($i = 1; $i <= 4; $i++) {
+            //     $unitId = "tank_{$color}_{$i}";
+            //     $sql = "INSERT INTO units (unit_id, type, player_id, x, y, is_fortified) VALUES ('$unitId', 'tank', $playerId, -1, -1, 0)";
+            //     self::DbQuery($sql);
+            // }
 
-            // Add battleship units
-            for ($i = 1; $i <= 4; $i++) {
-                $unitId = "battleship_{$color}_{$i}";
-                $sql = "INSERT INTO units (unit_id, type, player_id, x, y, is_fortified) VALUES ('$unitId', 'battleship', $playerId, -1, -1, 0)";
-                self::DbQuery($sql);
-            }
+            // // Add battleship units
+            // for ($i = 1; $i <= 4; $i++) {
+            //     $unitId = "battleship_{$color}_{$i}";
+            //     $sql = "INSERT INTO units (unit_id, type, player_id, x, y, is_fortified) VALUES ('$unitId', 'battleship', $playerId, -1, -1, 0)";
+            //     self::DbQuery($sql);
+            // }
 
-            // Add special units if game variant is "Special Warfare"
-            if (self::getGameStateValue('gameVariant') == 3) {
-                $unitId = "chopper_{$color}_1";
-                $sql = "INSERT INTO units (unit_id, type, player_id, x, y, is_fortified) VALUES ('$unitId', 'chopper', $playerId, -1, -1, 0)";
-                self::DbQuery($sql);
+            // // Add special units if game variant is "Special Warfare"
+            // if (self::getGameStateValue('gameVariant') == 3) {
+            //     $unitId = "chopper_{$color}_1";
+            //     $sql = "INSERT INTO units (unit_id, type, player_id, x, y, is_fortified) VALUES ('$unitId', 'chopper', $playerId, -1, -1, 0)";
+            //     self::DbQuery($sql);
 
-                $unitId = "artillery_{$color}_1";
-                $sql = "INSERT INTO units (unit_id, type, player_id, x, y, is_fortified) VALUES ('$unitId', 'artillery', $playerId, -1, -1, 0)";
-                self::DbQuery($sql);
-            }
+            //     $unitId = "artillery_{$color}_1";
+            //     $sql = "INSERT INTO units (unit_id, type, player_id, x, y, is_fortified) VALUES ('$unitId', 'artillery', $playerId, -1, -1, 0)";
+            //     self::DbQuery($sql);
+            // }
         }
 
         // 5. Reset game state values

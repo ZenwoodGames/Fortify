@@ -31,6 +31,7 @@ define([
                 let attackMode = false;
                 let gameVariant = null;
                 let selectedSpecialUnit = null;
+                let  infantryOnlyMode = false;
             },
 
             /*
@@ -55,12 +56,15 @@ define([
                 // Store the game variant
                 this.gameVariant = gamedatas.gameVariant;
 
+                // Initialize infantry enlistment count
+                this.infantryEnlistCount = 0;
+
                 // Special warfare mode is selected
                 if (this.gameVariant == 3) {
                     dojo.style($('player_deck_top'), 'width', '600px');
                     dojo.style($('player_deck_bottom'), 'width', '600px');
                 }
-
+                debugger;
                 // Initialize the game board
                 //this.initBoard(gamedatas);
 
@@ -164,7 +168,12 @@ define([
             },
 
             handleUnitClick: function (event) {
-                debugger
+                debugger;
+                if (this.infantryOnlyMode && !event.target.classList.contains('infantry')) {
+                    this.showMessage(_("You must select an infantry unit"), 'error');
+                    return;
+                }
+
                 // Get the current player's color
                 var currentPlayerColor = this.playerColor;
 
@@ -328,9 +337,13 @@ define([
                     // If unit is selected and is not on the board, then it is an enlist
                     if (this.selectedUnit && !this.isUnitOnBoard(this.selectedUnit)) {
                         if (!this.isSlotOccupied(slot) && slot.classList.contains('highlighted')) {
-                            this.finishEnlist(this.selectedUnit.classList[1],
-                                slot.dataset.x, slot.dataset.y,
-                                this.selectedUnit.id);
+                            var unitType = this.selectedUnit.classList[1];
+                            var x = parseInt(slot.dataset.x);
+                            var y = parseInt(slot.dataset.y);
+                            var unitId = this.selectedUnit.id;
+                            var isFortified = this.selectedUnit.classList.contains('fortified');
+
+                            this.finishEnlist(unitType, x, y, unitId, isFortified);
                             return;
                         }
                     }
@@ -354,7 +367,7 @@ define([
                             else {
                                 this.finishEnlist(this.selectedSpecialUnit.classList[1],
                                     slot.dataset.x, slot.dataset.y,
-                                    this.selectedSpecialUnit.id);
+                                    this.selectedSpecialUnit.id, this.selectedUnit.classList.contains('fortified'));
                             }
                             return;
                         }
@@ -513,6 +526,7 @@ define([
                         this.onEnterPlayerFirstEnlist(args);
                         break;
                     case 'playerTurn':
+                        this.infantryEnlistCount = 0;
                         this.updateActionCounter(args.args.actionsRemaining);
                         break;
                     case 'playerFirstTurn':
@@ -678,7 +692,7 @@ define([
                 if (this.gamedatas.players[this.player_id] && this.gamedatas.players[this.player_id].color_back) {
                     color_bg = "background-color:#" + this.gamedatas.players[this.player_id].color_back + ";";
                 }
-                var you = "<span style=\"font-weight:bold;color:#" + color + ";" + color_bg + "\">" + __("lang_mainsite", "You") + "</span>";
+                var you = "<span style=\"font-weight:bold;color:" + color + ";" + color_bg + "\">" + __("lang_mainsite", "You") + "</span>";
                 return you;
             },
 
@@ -696,16 +710,13 @@ define([
             
             */
             enlist: function () {
-
-                // if (this.checkAction('enlist')) {
-                // Remove existing highlight
                 this.removeAllHighlights();
 
                 this.gameState = 'enlist';
                 this.updateActionButtons('enlist');
-                // }
             },
-            finishEnlist: function (unitType, x, y, unitId) {
+
+            finishEnlist: function (unitType, x, y, unitId, is_fortified) {
 
                 if (this.checkAction('enlist')) {
                     this.ajaxcall("/fortify/fortify/enlist.html", {
@@ -713,17 +724,39 @@ define([
                         x: x,
                         y: y,
                         unitId: unitId,
+                        is_fortified: is_fortified,
                         lock: true
                     }, this, function (result) {
                         this.removeSlotHighlight();
                         this.removeUnitHighlight();
                         this.selectedUnit = null;
                         this.selectedSpecialUnit = null;
+
+                        // Check if this was the first infantry enlistment
+                        if (result.infantryEnlistCount == 1) {
+                            this.showMessage(_("You can enlist another infantry unit for free"), 'info');
+                            this.restrictToInfantryEnlistment();
+                        }
                     }, function (is_error) {
 
                         // What to do after the server call in any case
                     });
                 }
+            },
+            restrictToInfantryEnlistment: function () {
+                // Disable all action buttons except for enlist
+                //dojo.query('.action-button').forEach(function (button) {
+                //    if (button.id !== 'btnEnlist') {
+                //        dojo.style(button, 'display', 'none');
+                //    }
+                //});
+
+                // Highlight only infantry units in the player's supply
+                //dojo.query('.unit').removeClass('highlighted');
+                //dojo.query('.unit.infantry:not(.board-slot .unit)').addClass('highlighted');
+
+                // Disable selection of non-infantry units
+                this.infantryOnlyMode = true;
             },
             onEnterPlayerFirstEnlist: function (args) {
                 this.gameState = 'firstEnlisting';
@@ -1042,15 +1075,37 @@ define([
             },
 
             updatePlayerSupply: function (unit) {
-                var player_deck = $('player_deck_top');
-                var deckId = `${unit[unit_type]}_deck_` + (unit.player_id == this.player_id ? 'bottom' : 'top');
-                var deck = $(deckId);
-                if (deck) {
-                    var unitDiv = this.createUnitDiv(unit.unit_id, unit.type, this.gamedatas.players[unit.player_id].color);
+                debugger;
+                var playerDeckId = 'player_deck_' + (unit.unit_id.dataset.color == 'red' ? 'bottom' : 'top');
+                var playerDeck = $(playerDeckId);
+
+                if (playerDeck) {
+                    var deckId = unit.type + '_deck';
                     if (unit.is_fortified == '1') {
-                        dojo.addClass(unitDiv, 'fortified');
+                        deckId += '_fortified';
                     }
-                    dojo.place(unitDiv, deck);
+
+                    var deck = dojo.query('#' + playerDeckId + ' > #' + deckId)[0];
+
+                    if (deck) {
+                        var unitDiv;
+                        if (unit.unit_id) {
+                            unitDiv = unit.unit_id;
+                            dojo.removeClass(unitDiv, 'reinforcement');
+                        }
+                        else {
+                            unitDiv = this.createUnitDiv(unit.unit_id, unit.type, this.gamedatas.players[unit.player_id].color);
+                            if (unit.is_fortified == '1') {
+                                dojo.addClass(unitDiv, 'fortified');
+                            }
+                        }
+
+                        dojo.place(unitDiv, deck);
+                    } else {
+                        console.error('Deck not found:', deckId);
+                    }
+                } else {
+                    console.error('Player deck not found:', playerDeckId);
                 }
             },
 
@@ -1118,51 +1173,18 @@ define([
                             }
                         });
                     } else {
-                    // Highlight orthogonal adjacent empty spaces
-                    var orthogonalDirections = [
-                        { dx: 0, dy: -1 }, // up
-                        { dx: 0, dy: 1 },  // down
-                        { dx: -1, dy: 0 }, // left
-                        { dx: 1, dy: 0 }   // right
-                    ];
+                        // Highlight orthogonal adjacent empty spaces
+                        var orthogonalDirections = [
+                            { dx: 0, dy: -1 }, // up
+                            { dx: 0, dy: 1 },  // down
+                            { dx: -1, dy: 0 }, // left
+                            { dx: 1, dy: 0 }   // right
+                        ];
 
-                    orthogonalDirections.forEach(dir => {
-
-                        var newX = x + dir.dx;
-                        var newY = y + dir.dy;
-                        var slotType = '';
-                        switch (selectedUnitDetails.type) {
-                            case 'infantry':
-                            case 'tank':
-                                slotType = "land";
-                                break;
-                            case 'battleship':
-                                slotType = "water";
-                                break;
-                            case 'artillery':
-                                slotType = "land";
-                                break;
-                        }
-                        // Artillery is a land only unit
-                        if (selectedUnitDetails.type == 'artillery')
-                            var slot = document.querySelector(`.board-slot[data-x="${newX}"][data-y="${newY}"]:is(.${slotType})`);
-                        else
-                            var slot = document.querySelector(`.board-slot[data-x="${newX}"][data-y="${newY}"]:is(.${slotType}, .shore)`);
-
-                        if (slot && !slot.hasChildNodes()) {
-                            slot.classList.add('highlighted');
-                        }
-                    });
-
-
-                    // Highlight spaces orthogonally adjacent to friendly units on board
-                    var friendlyUnits = document.querySelectorAll(`.board-slot > .unit.${this.playerColor}`);
-                    friendlyUnits.forEach(unit => {
-                        var unitX = parseInt(unit.parentNode.dataset.x);
-                        var unitY = parseInt(unit.parentNode.dataset.y);
                         orthogonalDirections.forEach(dir => {
-                            var newX = unitX + dir.dx;
-                            var newY = unitY + dir.dy;
+
+                            var newX = x + dir.dx;
+                            var newY = y + dir.dy;
                             var slotType = '';
                             switch (selectedUnitDetails.type) {
                                 case 'infantry':
@@ -1176,16 +1198,49 @@ define([
                                     slotType = "land";
                                     break;
                             }
+                            // Artillery is a land only unit
                             if (selectedUnitDetails.type == 'artillery')
                                 var slot = document.querySelector(`.board-slot[data-x="${newX}"][data-y="${newY}"]:is(.${slotType})`);
                             else
                                 var slot = document.querySelector(`.board-slot[data-x="${newX}"][data-y="${newY}"]:is(.${slotType}, .shore)`);
 
-                            if (slot && !slot.hasChildNodes() && (newX !== x || newY !== y)) {
+                            if (slot && !slot.hasChildNodes()) {
                                 slot.classList.add('highlighted');
                             }
                         });
-                    });
+
+
+                        // Highlight spaces orthogonally adjacent to friendly units on board
+                        var friendlyUnits = document.querySelectorAll(`.board-slot > .unit.${this.playerColor}`);
+                        friendlyUnits.forEach(unit => {
+                            var unitX = parseInt(unit.parentNode.dataset.x);
+                            var unitY = parseInt(unit.parentNode.dataset.y);
+                            orthogonalDirections.forEach(dir => {
+                                var newX = unitX + dir.dx;
+                                var newY = unitY + dir.dy;
+                                var slotType = '';
+                                switch (selectedUnitDetails.type) {
+                                    case 'infantry':
+                                    case 'tank':
+                                        slotType = "land";
+                                        break;
+                                    case 'battleship':
+                                        slotType = "water";
+                                        break;
+                                    case 'artillery':
+                                        slotType = "land";
+                                        break;
+                                }
+                                if (selectedUnitDetails.type == 'artillery')
+                                    var slot = document.querySelector(`.board-slot[data-x="${newX}"][data-y="${newY}"]:is(.${slotType})`);
+                                else
+                                    var slot = document.querySelector(`.board-slot[data-x="${newX}"][data-y="${newY}"]:is(.${slotType}, .shore)`);
+
+                                if (slot && !slot.hasChildNodes() && (newX !== x || newY !== y)) {
+                                    slot.classList.add('highlighted');
+                                }
+                            });
+                        });
                     }
                 }
             },
@@ -1228,6 +1283,8 @@ define([
             resetBoard: function () {
                 // Remove all units from the board
                 dojo.query('.board-slot .unit').forEach(dojo.destroy);
+                // Remove all units from the deck
+                dojo.query('.unit_deck .unit').forEach(dojo.destroy);
 
                 // Clear the reinforcement track
                 dojo.query('#reinforcement_track .reinforcement_slot').forEach(function (slot) {
@@ -1267,14 +1324,14 @@ define([
 
                 this.addEventListenserForActionButtons(this.gamedatas.gamestate.possibleactions);
 
-                for (var i in this.gamedatas.units) {
-                    var unit = this.gamedatas.units[i];
-                    this.placeUnitOnBoard(unit.unit_id, unit.type, unit.x, unit.y, unit.player_id, unit.is_fortified);
-                }
+                // for (var i in this.gamedatas.units) {
+                //     var unit = this.gamedatas.units[i];
+                //     this.placeUnitOnBoard(unit.unit_id, unit.type, unit.x, unit.y, unit.player_id, unit.is_fortified);
+                // }
 
-                // Initialize the reinforcement track
-                if (this.gamedatas.reinforcementTrack)
-                    this.updateReinforcementTrack(this.gamedatas.reinforcementTrack);
+                // // Initialize the reinforcement track
+                // if (this.gamedatas.reinforcementTrack)
+                //     this.updateReinforcementTrack(this.gamedatas.reinforcementTrack);
 
                 // Add event listener for the attack button
                 dojo.connect($('btnAttack'), 'onclick', this, 'onAttackButtonClick');
@@ -1345,8 +1402,8 @@ define([
                 // Update player colors and decks
                 for (var playerId in notif.args.players) {
                     var player = notif.args.players[playerId];
-                    this.updatePlayerColor(playerId, player.player_color);
-                    this.resetPlayerDeck(playerId, player.player_color);
+                    //this.updatePlayerColor(playerId, player.player_color);
+                    //this.resetPlayerDeck(playerId, player.player_color);
                 }
 
                 // Show a message about the new volley
@@ -1358,8 +1415,8 @@ define([
 
             updatePlayerColor: function (playerId, color) {
                 // Update player board color
-                dojo.removeClass('player_board_' + playerId, 'player_color_red player_color_green');
-                dojo.addClass('player_board_' + playerId, 'player_color_' + color);
+                //dojo.removeClass('player_board_' + playerId, 'player_color_red player_color_green');
+                //dojo.addClass('player_board_' + playerId, 'player_color_' + color);
 
                 // Update any other UI elements that depend on player color
             },
@@ -1394,8 +1451,21 @@ define([
             },
 
             notif_unitEnlisted: function (notif) {
-
+                debugger;
                 console.log('Notification received: unitEnlisted', notif);
+
+                if (notif.args.infantryEnlistCount == 1) {
+                    if (notif.args.player_id == this.player_id) {
+                        this.showMessage(_("You can enlist another infantry unit for free"), 'info');
+                        this.restrictToInfantryEnlistment();
+                    } else {
+                        this.showMessage(_(notif.args.player_name + " can enlist another infantry unit for free"), 'info');
+                    }
+                } else {
+                    // Reset to normal mode
+                    this.infantryOnlyMode = false;
+                    //dojo.query('.action-button').style('display', 'inline-block');
+                }
 
                 // Create or move the unit on the board
                 var unitId = notif.args.unitId;
@@ -1525,11 +1595,11 @@ define([
             },
 
             notif_unitReturnedToSupply: function (notif) {
-
+                debugger;
                 this.showMessage(_("A ${unit_type} has returned to ${player_name}'s supply")
                     .replace('${unit_type}', notif.args.unit_type)
                     .replace('${player_name}', notif.args.player_name));
-
+                var unit = this.getUnitDetails($(notif.args.unit_id));
                 // Update the player's supply in the UI
                 this.updatePlayerSupply(unit);
             },

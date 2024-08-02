@@ -50,5 +50,8 @@ CREATE TABLE IF NOT EXISTS `reinforcement_track` (
     `unit_id` VARCHAR(24) NOT NULL,
     `position` INT NOT NULL,
     `is_fortified` BOOLEAN NOT NULL DEFAULT FALSE,
+    `player_id` INT NOT NULL,
     PRIMARY KEY (`unit_id`)
 );
+
+ALTER TABLE `player` ADD `infantry_enlist_count` INT UNSIGNED NOT NULL DEFAULT '0';
