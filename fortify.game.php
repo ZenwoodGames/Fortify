@@ -369,9 +369,9 @@ class Fortify extends Table
                 $sql = "UPDATE units SET x = $x, y = $y WHERE unit_id = '$unitId'";
                 self::DbQuery($sql);
             } else {
-            $sql = "INSERT INTO units (type, player_id, x, y, unit_id, is_fortified) 
-                    VALUES ('$unitType', $player_id, $x, $y, '$unitId', '$is_fortified')";
-            self::DbQuery($sql);
+                $sql = "INSERT INTO units (type, player_id, x, y, unit_id, is_fortified) 
+                        VALUES ('$unitType', $player_id, $x, $y, '$unitId', '$is_fortified')";
+                        self::DbQuery($sql);
             }
 
             // Get the player's color
@@ -473,11 +473,10 @@ class Fortify extends Table
                 $this->serverLog("infantryEnlistCount = ", "$infantryEnlistCount");
 
                 if ($infantryEnlistCount == 1) {
-                }
-                else{
+                } else {
                     $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
                     $this->setGameStateValue('actionsRemaining', $actionsRemaining);
-                    if($actionsRemaining == 0){
+                    if ($actionsRemaining == 0) {
                         $actionsRemaining = 2;
                         $this->setGameStateValue('actionsRemaining', $actionsRemaining);
                         $this->gamestate->nextState('nextPlayer');
@@ -487,7 +486,7 @@ class Fortify extends Table
                 self::notifyAllPlayers('actionsRemaining', '', array(
                     'actionsRemaining' => $actionsRemaining
                 ));
-                
+
                 // Stay in the current state without transitioning
                 //$this->gamestate->nextState('stayInState');
             }
