@@ -1209,7 +1209,7 @@ class Fortify extends Table
             $current_player_id = self::getActivePlayerId();
             // If the unit is not in the track, insert it at position 1
             $sql = "INSERT INTO reinforcement_track (unit_id, position, is_fortified, player_id) 
-                    VALUES ('" . $unit['unit_id'] . "', 1, " . ($unit['is_fortified'] ? '1' : '0') . ", $current_player_id)";
+                    VALUES ('" . $unit['unit_id'] . "', 1, " . ($unit['is_fortified'] ? '1' : '0') . ", " . $unit['player_id'] . ")";
             self::DbQuery($sql);
         }
 
