@@ -607,6 +607,15 @@ class Fortify extends Table
             ]);
         }
 
+        // If infantry enlist was previous move, cancel the free infantry enlist
+        // And decrease the actionremaining counter by 1
+        $infantryEnlistCount = $this->getInfantryEnlistCount($player_id);
+        if($infantryEnlistCount == 1){
+            $this->setInfantryEnlistCount($player_id, 0);
+            $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
+            $this->setGameStateValue('actionsRemaining', $actionsRemaining);
+        }
+
         if ($unitType == 'artillery') {
             // Artillery consumes 2 actions for a move
             $actionsRemaining = 0;
@@ -702,6 +711,15 @@ class Fortify extends Table
             'unit_type' => $unit['type'],
             'unit' => $unit
         ]);
+
+        // If infantry enlist was previous move, cancel the free infantry enlist
+        // And decrease the actionremaining counter by 1
+        $infantryEnlistCount = $this->getInfantryEnlistCount($player_id);
+        if($infantryEnlistCount == 1){
+            $this->setInfantryEnlistCount($player_id, 0);
+            $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
+            $this->setGameStateValue('actionsRemaining', $actionsRemaining);
+        }
 
         if ($unit['type'] == 'artillery') {
             // Artillery consumes 2 actions for a fortification
@@ -1156,6 +1174,14 @@ class Fortify extends Table
             'reinforcementTrack' => $updatedReinforcementTrack
         ]);
 
+        // If infantry enlist was previous move, cancel the free infantry enlist
+        // And decrease the actionremaining counter by 1
+        $infantryEnlistCount = $this->getInfantryEnlistCount($player_id);
+        if($infantryEnlistCount == 1){
+            $this->setInfantryEnlistCount($player_id, 0);
+            $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
+            $this->setGameStateValue('actionsRemaining', $actionsRemaining);
+        }
         // Decrease the action counter
         $this->decreaseActionCounter();
     }
