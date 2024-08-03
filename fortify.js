@@ -1027,6 +1027,7 @@ define([
                     this.selectedSpecialUnit = null;
                     dojo.removeClass('btnAttack', 'active');
                     dojo.style($('btnAttack'), 'display', 'none');
+                    this.clearHighlights();
                 }, function (is_error) {
                     if (is_error) {
                         this.removeUnitHighlight();
@@ -1034,6 +1035,7 @@ define([
                         dojo.removeClass('btnAttack', 'active');
                         dojo.style($('btnAttack'), 'display', 'none');
                         this.attackMode = false;
+                        this.clearHighlights();
                     }
                 });
             },
