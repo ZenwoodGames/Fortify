@@ -364,14 +364,15 @@ class Fortify extends Table
             $sql = "SELECT COUNT(*) FROM units WHERE unit_id = '$unitId'";
             $count = self::getUniqueValueFromDB($sql);
 
-            if ($count > 1) {
+            // If the unit is already added in units db, then update the position for enlisting
+            if ($count > 0) {
                 $sql = "UPDATE units SET x = $x, y = $y WHERE unit_id = '$unitId'";
                 self::DbQuery($sql);
-            }
-
+            } else {
             $sql = "INSERT INTO units (type, player_id, x, y, unit_id, is_fortified) 
                     VALUES ('$unitType', $player_id, $x, $y, '$unitId', '$is_fortified')";
             self::DbQuery($sql);
+            }
 
             // Get the player's color
             $players = self::loadPlayersBasicInfos();
