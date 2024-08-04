@@ -3,7 +3,7 @@
 /**
  *------
  * BGA framework: Gregory Isabelli & Emmanuel Colin & BoardGameArena
- * Fortify implementation : © <Your name here> <Your email address here>
+ * Fortify implementation : © Nirmatt Gopal nrmtgpl@gmail.com
  * 
  * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
  * See http://en.boardgamearena.com/#!doc/Studio for more information.
@@ -114,9 +114,12 @@ class Fortify extends Table
     {
         $result = array('players' => array(), 'units' => array());
 
+        self::reloadPlayersBasicInfos();
         // Get players & their data
         $sql = "SELECT player_id id, player_name name, player_score score FROM player";
         $result['players'] = self::getCollectionFromDb($sql);
+
+        $this->serverLog("players", $result['players']);
 
         // Get units & their data
         $sql = "SELECT id, type, player_id, x, y, unit_id, is_fortified FROM units";
@@ -1375,9 +1378,13 @@ class Fortify extends Table
 
         if ($endVolley) {
             $this->volleyCount++;
+            $this->serverLog("volleyCount", $this->volleyCount);
+
             $this->playerVolleyWins[$activePlayerId] = isset($this->playerVolleyWins[$activePlayerId])
                 ? $this->playerVolleyWins[$activePlayerId] + 1
                 : 1;
+            
+            $this->serverLog("playerVolleyWins", $this->playerVolleyWins[$activePlayerId]);
 
             // Check if a player has won 2 volleys
             foreach ($this->playerVolleyWins as $playerId => $wins) {
@@ -1438,32 +1445,6 @@ class Fortify extends Table
         return $totalUnits == 12 && $totalUnits == $fortifiedUnits;
     }
 
-    private function startNewVolley()
-    {
-        // Swap player colors
-        $players = self::loadPlayersBasicInfos();
-        $colors = array('red', 'green');
-        $i = 0;
-        foreach ($players as $playerId => $player) {
-            $newColor = $colors[($i + 1) % 2];
-            $sql = "UPDATE player SET player_color='$newColor' WHERE player_id=$playerId";
-            self::DbQuery($sql);
-            $i++;
-        }
-
-        // Reset the board
-        self::DbQuery("DELETE FROM units");
-        self::DbQuery("DELETE FROM reinforcement_track");
-
-        // Notify players about new volley
-        self::notifyAllPlayers('newVolley', clienttranslate('A new volley begins! Players have switched colors.'), array(
-            'volleyCount' => $this->volleyCount
-        ));
-
-        // Move to setup state for the new volley
-        $this->gamestate->nextState('newVolley');
-    }
-
     private function getBoard()
     {
         $sql = "SELECT unit_id, type, player_id, x, y, is_fortified FROM units";
@@ -1480,6 +1461,7 @@ class Fortify extends Table
     function stNewVolley()
     {
         // Reset the game for a new volley
+        $this->serverLog("Resetting the game for new volley", "");
         $this->setupNewVolley();
         //$this->gamestate->nextState('');
     }
@@ -1503,12 +1485,15 @@ class Fortify extends Table
         $players = self::loadPlayersBasicInfos();
         $colors = array('red', 'green');
         $i = 0;
-        // foreach ($players as $playerId => $player) {
-        //     $newColor = $colors[($i + 1) % 2];
-        //     $sql = "UPDATE player SET player_color='$newColor' WHERE player_id=$playerId";
-        //     self::DbQuery($sql);
-        //     $i++;
-        // }
+        foreach ($players as $playerId => $player) {
+            $newColor = $colors[($i + 1) % 2];
+            $sql = "UPDATE player SET player_color='$newColor' WHERE player_id=$playerId";
+            self::DbQuery($sql);
+            $i++;
+        }
+        self::reloadPlayersBasicInfos();
+        $players = self::loadPlayersBasicInfos();
+        
 
         // 2. Clear the board
         self::DbQuery("DELETE FROM units");
@@ -1516,43 +1501,6 @@ class Fortify extends Table
         // 3. Clear the reinforcement track
         self::DbQuery("DELETE FROM reinforcement_track");
         $this->serverLog("deleted all reinforcement_track", "");
-
-        // 4. Reset player decks
-        foreach ($players as $playerId => $player) {
-            $color = $player['player_color'];
-
-            // // Add infantry units
-            // for ($i = 1; $i <= 4; $i++) {
-            //     $unitId = "infantry_{$color}_{$i}";
-            //     $sql = "INSERT INTO units (unit_id, type, player_id, x, y, is_fortified) VALUES ('$unitId', 'infantry', $playerId, -1, -1, 0)";
-            //     self::DbQuery($sql);
-            // }
-
-            // // Add tank units
-            // for ($i = 1; $i <= 4; $i++) {
-            //     $unitId = "tank_{$color}_{$i}";
-            //     $sql = "INSERT INTO units (unit_id, type, player_id, x, y, is_fortified) VALUES ('$unitId', 'tank', $playerId, -1, -1, 0)";
-            //     self::DbQuery($sql);
-            // }
-
-            // // Add battleship units
-            // for ($i = 1; $i <= 4; $i++) {
-            //     $unitId = "battleship_{$color}_{$i}";
-            //     $sql = "INSERT INTO units (unit_id, type, player_id, x, y, is_fortified) VALUES ('$unitId', 'battleship', $playerId, -1, -1, 0)";
-            //     self::DbQuery($sql);
-            // }
-
-            // // Add special units if game variant is "Special Warfare"
-            // if (self::getGameStateValue('gameVariant') == 3) {
-            //     $unitId = "chopper_{$color}_1";
-            //     $sql = "INSERT INTO units (unit_id, type, player_id, x, y, is_fortified) VALUES ('$unitId', 'chopper', $playerId, -1, -1, 0)";
-            //     self::DbQuery($sql);
-
-            //     $unitId = "artillery_{$color}_1";
-            //     $sql = "INSERT INTO units (unit_id, type, player_id, x, y, is_fortified) VALUES ('$unitId', 'artillery', $playerId, -1, -1, 0)";
-            //     self::DbQuery($sql);
-            // }
-        }
 
         // 5. Reset game state values
         self::setGameStateValue('isFirstRound', 1);
@@ -1574,9 +1522,10 @@ class Fortify extends Table
         }
 
         // 8. Reset the active player to the first player
-        $newFirstPlayerId = array_keys($players)[0];
+        $newFirstPlayerId = array_keys($players)[1];
         $this->gamestate->changeActivePlayer($newFirstPlayerId);
-
+        self::giveExtraTime($newFirstPlayerId);
+        
         // 9. Prepare for the first turn of the new volley
         $this->gamestate->nextState('');
     }

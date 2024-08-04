@@ -1285,7 +1285,20 @@ define([
                 }
             },
 
-            resetBoard: function () {
+            resetBoard: function (players) {
+                debugger;
+                //this.playerColor = this.gamedatas.players[this.player_id].color;
+
+                // Store the game variant
+                this.gameVariant = this.gamedatas.gameVariant;
+                //his.gamedatas.players = players;
+
+                Object.keys( this.gamedatas.players).forEach(id => {
+                    if (players[id]) {
+                     this.gamedatas.players[id].color = players[id].player_color;
+                    }
+                });
+                
                 // Remove all units from the board
                 dojo.query('.board-slot .unit').forEach(dojo.destroy);
                 // Remove all units from the deck
@@ -1315,15 +1328,10 @@ define([
                 this.initPlayerDecks(this.gamedatas);
 
                 // Setup game notifications to handle (see "setupNotifications" method below)
-                this.setupNotifications();
+                //this.setupNotifications();
 
                 // Add event listeners to the units
                 dojo.query('.unit').connect('onclick', this, dojo.hitch(this, 'handleUnitClick'));
-
-                // Add event listener for slots
-                dojo.query('.board-slot').connect('onclick', this, dojo.hitch(this, 'handleSlotClick'));
-                //dojo.connect($('btnMove'), 'onclick', this, 'startMoveAction');
-                dojo.connect($('btnFortify'), 'onclick', this, 'onFortifyButtonClick');
 
                 dojo.hitch(this, this.highlightValidMoves)();
 
@@ -1402,7 +1410,7 @@ define([
             notif_newVolley: function (notif) {
                 debugger;
                 // Reset the board
-                this.resetBoard();
+                this.resetBoard(notif.args.players);
                 //this.setup(this.gamedatas);
                 // Update player colors and decks
                 for (var playerId in notif.args.players) {
@@ -1424,6 +1432,9 @@ define([
                 //dojo.addClass('player_board_' + playerId, 'player_color_' + color);
 
                 // Update any other UI elements that depend on player color
+                debugger;
+                if(playerId == this.getCurrentPlayerId())
+                    this.playerColor = color;
             },
 
             resetPlayerDeck: function (playerId, color) {
