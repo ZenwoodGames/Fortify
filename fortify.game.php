@@ -1357,11 +1357,12 @@ class Fortify extends Table
 
         $players = self::loadPlayersBasicInfos();
         $activePlayerId = self::getActivePlayerId();
+        $this->serverLog("activePlayerId", $activePlayerId);
         $endVolley = false;
         $isFirstRound = $this->getGameStateValue('isFirstRound');
-        $this->serverLog("isFirstRound inside checkgameend", $isFirstRound);
+        // $this->serverLog("isFirstRound inside checkgameend", $isFirstRound);
         $isVeryFirstTurn = $this->getGameStateValue('isVeryFirstTurn');
-        $this->serverLog("isVeryFirstTurn inside checkgameend", $isVeryFirstTurn);
+        // $this->serverLog("isVeryFirstTurn inside checkgameend", $isVeryFirstTurn);
 
         // Check for 2x2 fortification
         if ($this->check2x2Fortification($activePlayerId)) {
@@ -1374,6 +1375,7 @@ class Fortify extends Table
             $endVolley = true;
             self::notifyAllPlayers('debug', 'All units fortified', array());
         }
+        $this->serverLog("playerVolleyWins", $this->playerVolleyWins);
 
         if ($endVolley) {
             $this->volleyCount++;
@@ -1383,18 +1385,14 @@ class Fortify extends Table
                 ? $this->playerVolleyWins[$activePlayerId] + 1
                 : 1;
 
-            $this->serverLog("playerVolleyWins", $this->playerVolleyWins[$activePlayerId]);
-
             // Check if a player has won 2 volleys
-            foreach ($this->playerVolleyWins as $playerId => $wins) {
-                if ($wins == 2) {
-                    // End the game
-                    $this->gamestate->nextState('endGame');
-                    return true;
-                }
+            if ($this->playerVolleyWins[$activePlayerId] == 2) {
+                // End the game
+                $this->gamestate->nextState('endGame');
+                return true;
             }
 
-            // Start a new volley
+            // Start a new volley if the game hasn't ended
             if ($this->volleyCount < 3) {
                 $this->gamestate->nextState('newVolley');
                 return true;
@@ -1404,6 +1402,8 @@ class Fortify extends Table
                 return true;
             }
         }
+
+        return false;
     }
 
     private function check2x2Fortification($playerId)
