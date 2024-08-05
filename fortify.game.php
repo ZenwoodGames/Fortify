@@ -374,7 +374,7 @@ class Fortify extends Table
             } else {
                 $sql = "INSERT INTO units (type, player_id, x, y, unit_id, is_fortified) 
                         VALUES ('$unitType', $player_id, $x, $y, '$unitId', '$is_fortified')";
-                        self::DbQuery($sql);
+                self::DbQuery($sql);
             }
 
             // Get the player's color
@@ -613,7 +613,7 @@ class Fortify extends Table
         // If infantry enlist was previous move, cancel the free infantry enlist
         // And decrease the actionremaining counter by 1
         $infantryEnlistCount = $this->getInfantryEnlistCount($player_id);
-        if($infantryEnlistCount == 1){
+        if ($infantryEnlistCount == 1) {
             $this->setInfantryEnlistCount($player_id, 0);
             $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
             $this->setGameStateValue('actionsRemaining', $actionsRemaining);
@@ -718,7 +718,7 @@ class Fortify extends Table
         // If infantry enlist was previous move, cancel the free infantry enlist
         // And decrease the actionremaining counter by 1
         $infantryEnlistCount = $this->getInfantryEnlistCount($player_id);
-        if($infantryEnlistCount == 1){
+        if ($infantryEnlistCount == 1) {
             $this->setInfantryEnlistCount($player_id, 0);
             $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
             $this->setGameStateValue('actionsRemaining', $actionsRemaining);
@@ -932,10 +932,6 @@ class Fortify extends Table
     // Helper function to get the space type (you may need to implement this based on your game board structure)
     private function getSpaceType($x, $y)
     {
-        // Implement the logic to determine the space type (water, land, or shore) based on coordinates
-        // This is a placeholder implementation - adjust according to your game board structure
-        // For example, you might have a board array or database table with this information
-
         $shoreSpaces = [
             [0, 3], [1, 2], [2, 1], [3, 0],
         ];
@@ -952,66 +948,69 @@ class Fortify extends Table
 
     private function checkInfantryFormation($centerUnit, $adjacentUnits)
     {
-        // Find adjacent infantry units
+        $this->serverLog("Checking infantry formation for unit", $centerUnit);
+        $this->serverLog("Adjacent units", $adjacentUnits);
+
+        // Find adjacent friendly infantry units
         $adjacentInfantry = array_filter($adjacentUnits, function ($unit) use ($centerUnit) {
             return $unit['type'] == 'infantry' && $unit['player_id'] == $centerUnit['player_id'];
         });
 
+        $this->serverLog("Adjacent friendly infantry units", $adjacentInfantry);
+
         // If there's no adjacent friendly infantry, return null
         if (empty($adjacentInfantry)) {
+            $this->serverLog("No adjacent friendly infantry found", null);
             return null;
         }
 
         foreach ($adjacentInfantry as $partnerInfantry) {
+            $this->serverLog("Checking potential formation with partner", $partnerInfantry);
+
+            // Check if the partner infantry is actually adjacent
+            if (!$this->areUnitsAdjacent($centerUnit, $partnerInfantry)) {
+                $this->serverLog("Partner infantry is not adjacent", null);
+                continue;
+            }
+
             $potentialFormation = [$centerUnit, $partnerInfantry];
 
-            // Check if either the center unit or partner infantry is adjacent to a fortified friendly unit
-            if (
-                $this->isAdjacentToFortifiedFriendlyUnit($centerUnit, $adjacentUnits) ||
-                $this->isAdjacentToFortifiedFriendlyUnit($partnerInfantry, $adjacentUnits)
-            ) {
+            // Check if either the center unit or partner infantry is fortified
+            if ($centerUnit['is_fortified'] == '1' || $partnerInfantry['is_fortified'] == '1') {
+                $this->serverLog("Valid formation found (one unit is fortified)", $potentialFormation);
                 return $potentialFormation;
             }
 
-            // Check if there's a fortified friendly unit adjacent to either infantry
-            $allAdjacentUnits = array_merge($this->getAdjacentUnits($centerUnit), $this->getAdjacentUnits($partnerInfantry));
-            if ($this->hasFortifiedFriendlyUnit($allAdjacentUnits, $centerUnit['player_id'])) {
-                return $potentialFormation;
+            // Get all units adjacent to both infantry units
+            $allAdjacentUnits = array_merge(
+                $this->getAdjacentUnits($centerUnit),
+                $this->getAdjacentUnits($partnerInfantry)
+            );
+
+            $this->serverLog("All adjacent units to the formation", $allAdjacentUnits);
+
+            // Check if there's any fortified friendly unit adjacent to either infantry
+            foreach ($allAdjacentUnits as $adjacentUnit) {
+                if (
+                    $adjacentUnit['player_id'] == $centerUnit['player_id'] &&
+                    $adjacentUnit['is_fortified'] == '1' &&
+                    ($this->areUnitsAdjacent($centerUnit, $adjacentUnit) || $this->areUnitsAdjacent($partnerInfantry, $adjacentUnit))
+                ) {
+                    $this->serverLog("Valid formation found (adjacent fortified unit)", $potentialFormation);
+                    return $potentialFormation;
+                }
             }
         }
 
+        $this->serverLog("No valid formation found", null);
         return null;
     }
-
-    private function isAdjacentToFortifiedFriendlyUnit($unit, $adjacentUnits)
-    {
-        foreach ($adjacentUnits as $adjacentUnit) {
-            if ($adjacentUnit['is_fortified'] == '1' && $adjacentUnit['player_id'] == $unit['player_id']) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private function hasFortifiedFriendlyUnit($units, $playerId)
-    {
-        foreach ($units as $unit) {
-            if ($unit['is_fortified'] == '1' && $unit['player_id'] == $playerId) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private function isAdjacentToFortifiedUnit($unit, $adjacentUnits)
-    {
-        foreach ($adjacentUnits as $adjacentUnit) {
-            if ($adjacentUnit['is_fortified'] == '1' && $adjacentUnit['player_id'] == $unit['player_id']) {
-                return true;
-            }
-        }
-        return false;
-    }
+    // private function getAdjacentUnits($unit)
+    // {
+    //     $sql = "SELECT unit_id, x, y, type, player_id, is_fortified FROM units 
+    //             WHERE (ABS(x - {$unit['x']}) + ABS(y - {$unit['y']}) = 1)";
+    //     return self::getCollectionFromDb($sql);
+    // }
 
     private function checkTankFormation($centerUnit, $adjacentUnits)
     {
@@ -1180,7 +1179,7 @@ class Fortify extends Table
         // If infantry enlist was previous move, cancel the free infantry enlist
         // And decrease the actionremaining counter by 1
         $infantryEnlistCount = $this->getInfantryEnlistCount($player_id);
-        if($infantryEnlistCount == 1){
+        if ($infantryEnlistCount == 1) {
             $this->setInfantryEnlistCount($player_id, 0);
             $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
             $this->setGameStateValue('actionsRemaining', $actionsRemaining);
@@ -1383,7 +1382,7 @@ class Fortify extends Table
             $this->playerVolleyWins[$activePlayerId] = isset($this->playerVolleyWins[$activePlayerId])
                 ? $this->playerVolleyWins[$activePlayerId] + 1
                 : 1;
-            
+
             $this->serverLog("playerVolleyWins", $this->playerVolleyWins[$activePlayerId]);
 
             // Check if a player has won 2 volleys
@@ -1493,7 +1492,7 @@ class Fortify extends Table
         }
         self::reloadPlayersBasicInfos();
         $players = self::loadPlayersBasicInfos();
-        
+
 
         // 2. Clear the board
         self::DbQuery("DELETE FROM units");
@@ -1525,7 +1524,7 @@ class Fortify extends Table
         $newFirstPlayerId = array_keys($players)[1];
         $this->gamestate->changeActivePlayer($newFirstPlayerId);
         self::giveExtraTime($newFirstPlayerId);
-        
+
         // 9. Prepare for the first turn of the new volley
         $this->gamestate->nextState('');
     }
