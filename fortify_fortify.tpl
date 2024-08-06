@@ -21,6 +21,12 @@
                 <button class="action-button" id="btnAttack" style="display: none;">ATTACK</button>
                 <!--<button class="action-button" id="btnEnlist">ENLIST</button>-->
             </div>
+            <div id="points_display" class="whiteblock">
+                <h3 id="points_title"></h3>
+                <div id="points_container">
+                    <!-- Points will be inserted here by JavaScript -->
+                </div>
+            </div>
             <div id="board">
                 <div id="slots_container">
                     <!-- Board slots for placing units -->

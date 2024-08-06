@@ -93,10 +93,9 @@ class Fortify extends Table
         // Explicitly set the first player as active
         $this->gamestate->changeActivePlayer($first_player_id);
 
-        // Go to the first player's turn
-        //$this->gamestate->nextState(ST_PLAYER_F_TURN);
-        // Go to the first player's turn
-        //$this->gamestate->nextState(ST_PLAYER_F_TURN);
+        // Initialize player scores
+        $sql = "UPDATE player SET player_score = 0";
+        self::DbQuery($sql);
 
         /************ End of the game initialization *****/
     }
@@ -112,7 +111,12 @@ class Fortify extends Table
     */
     public function getAllDatas()
     {
-        $result = array('players' => array(), 'units' => array());
+        $result = array(
+            'players' => array(),
+            'units' => array(),
+            'POINTS_TITLE' => clienttranslate("Points"),
+            'POINTS_LABEL' => clienttranslate("pts")
+        );
 
         self::reloadPlayersBasicInfos();
         // Get players & their data
@@ -261,6 +265,95 @@ class Fortify extends Table
         );
     }
 
+    private function calculateAndUpdatePoints($playerId)
+    {
+        $points = 0;
+
+        // Points for fortified units on the board
+        $sql = "SELECT type, COUNT(*) as count 
+                FROM units 
+                WHERE player_id = $playerId AND is_fortified = 1 
+                GROUP BY type";
+        $fortifiedUnitsOnBoard = self::getCollectionFromDb($sql);
+        $this->serverLog("fortifiedUnitsOnBoard", $fortifiedUnitsOnBoard);
+
+        // Points for fortified units in reinforcement track
+        $sql = "SELECT type, COUNT(*) as count 
+                FROM reinforcement_track 
+                WHERE player_id = $playerId AND is_fortified = 1";
+        $fortifiedUnitsInReinforcement = self::getCollectionFromDb($sql);
+        // Debug logging
+        $this->serverLog("Fortified units on board:", $fortifiedUnitsOnBoard);
+        $this->serverLog("Fortified units in reinforcement:", $fortifiedUnitsInReinforcement);
+
+        // Combine the results safely
+        $allFortifiedUnits = $fortifiedUnitsOnBoard;
+        foreach ($fortifiedUnitsInReinforcement as $type => $data) {
+            if (isset($allFortifiedUnits[$type])) {
+                $allFortifiedUnits[$type]['count'] += $data['count'];
+            } else {
+                $allFortifiedUnits[$type] = $data;
+            }
+        }
+
+        // Debug logging
+        $this->serverLog("All fortified units:", $allFortifiedUnits);
+
+        foreach ($allFortifiedUnits as $unit) {
+            switch ($unit['type']) {
+                case 'battleship':
+                case 'artillery':
+                    $points += 3 * $unit['count'];
+                    break;
+                case 'tank':
+                    $points += 2 * $unit['count'];
+                    break;
+                case 'infantry':
+                case 'chopper':
+                    $points += $unit['count'];
+                    break;
+            }
+        }
+
+        // Deduct points for units in Reinforcement Track
+        $sql = "SELECT COUNT(*) as count FROM reinforcement_track WHERE player_id = $playerId";
+        $reinforcementUnits = self::getUniqueValueFromDB($sql);
+        $this->serverLog("reinforcementUnits", $reinforcementUnits);
+        $this->serverLog("points", $points);
+        $points -= 2 * $reinforcementUnits;
+
+        // Add 7 points if player won by 2x2 Fortification
+        if ($this->check2x2Fortification($playerId)) {
+            $points += 7;
+        }
+
+        // Update player's points
+        //$this->playerPoints[$playerId] = $points;
+        // $pointsLabel = $playerId == 1 ? "player1Points" : "player2Points";
+        // $this->setGameStateValue($pointsLabel, $points);
+
+        // Update player's points
+        $this->setPlayerPoints($playerId, $points);
+
+        // Notify all players about the updated points
+        self::notifyAllPlayers('pointsUpdated', '', array(
+            'playerId' => $playerId,
+            'points' => $points
+        ));
+    }
+
+    private function setPlayerPoints($player_id, $points)
+    {
+        $sql = "UPDATE player SET player_score = $points WHERE player_id = $player_id";
+        self::DbQuery($sql);
+    }
+
+    private function getPlayerPoints($player_id)
+    {
+        $sql = "SELECT player_score FROM player WHERE player_id = $player_id";
+        return self::getUniqueValueFromDB($sql);
+    }
+
     //////////////////////////////////////////////////////////////////////////////
     //////////// Player actions
     //////////// 
@@ -362,7 +455,6 @@ class Fortify extends Table
             ]);
         } else {
 
-
             // Add the unit to the board
             $sql = "SELECT COUNT(*) FROM units WHERE unit_id = '$unitId'";
             $count = self::getUniqueValueFromDB($sql);
@@ -413,10 +505,6 @@ class Fortify extends Table
                 'infantryEnlistCount' => $infantryEnlistCount
             ]);
         }
-
-        // Decrease the action counter
-        // $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
-        // $this->setGameStateValue('actionsRemaining', $actionsRemaining);
 
         // Check if this was the first round
         $isFirstRound = $this->getGameStateValue('isFirstRound');
@@ -489,11 +577,10 @@ class Fortify extends Table
                 self::notifyAllPlayers('actionsRemaining', '', array(
                     'actionsRemaining' => $actionsRemaining
                 ));
-
-                // Stay in the current state without transitioning
-                //$this->gamestate->nextState('stayInState');
             }
         }
+
+        $this->calculateAndUpdatePoints($player_id);
     }
 
     /**
@@ -635,6 +722,8 @@ class Fortify extends Table
         } else {
             $this->gamestate->nextState('stayInState');
         }
+
+        $this->calculateAndUpdatePoints($player_id);
     }
 
     function isValidMove($player_color, $fromX, $fromY, $toX, $toY)
@@ -748,6 +837,8 @@ class Fortify extends Table
             ]);
             $this->gamestate->nextState('stayInState');
         }
+
+        $this->calculateAndUpdatePoints($player_id);
     }
 
     private function findValidFormation($centerUnit, $adjacentUnits)
@@ -1186,6 +1277,9 @@ class Fortify extends Table
         }
         // Decrease the action counter
         $this->decreaseActionCounter();
+
+        $this->calculateAndUpdatePoints($player_id);
+        $this->calculateAndUpdatePoints($this->getPlayerAfter($player_id));
     }
 
     private function getUnitDetails($unitId)
@@ -1231,13 +1325,16 @@ class Fortify extends Table
 
         if ($existingUnit) {
             // If the unit is already in the track, update its position to 1
-            $sql = "UPDATE reinforcement_track SET position = 1, is_fortified = " . ($unit['is_fortified'] ? '1' : '0') . " WHERE unit_id = '" . $unit['unit_id'] . "'";
+            $sql = "UPDATE reinforcement_track 
+                    SET position = 1, 
+                    is_fortified = " . ($unit['is_fortified'] ? '1' : '0') . ",
+                    type = '" . $unit['type'] . "'
+                WHERE unit_id = '" . $unit['unit_id'] . "'";
             self::DbQuery($sql);
         } else {
-            $current_player_id = self::getActivePlayerId();
             // If the unit is not in the track, insert it at position 1
-            $sql = "INSERT INTO reinforcement_track (unit_id, position, is_fortified, player_id) 
-                    VALUES ('" . $unit['unit_id'] . "', 1, " . ($unit['is_fortified'] ? '1' : '0') . ", " . $unit['player_id'] . ")";
+            $sql = "INSERT INTO reinforcement_track (unit_id, position, is_fortified, player_id, type) 
+                    VALUES ('" . $unit['unit_id'] . "', 1, " . ($unit['is_fortified'] ? '1' : '0') . ", " . $unit['player_id'] . ", '" . $unit['type'] . "')";
             self::DbQuery($sql);
         }
 
@@ -1267,14 +1364,14 @@ class Fortify extends Table
     private function moveUnitToSupply($unit)
     {
         // Fetch complete unit information from the reinforcement_track table
-        $sql = "SELECT rt.*, u.type, rt.player_id 
+        $sql = "SELECT rt.*, rt.type, rt.player_id 
                 FROM reinforcement_track rt
                 LEFT JOIN units u ON rt.unit_id = u.unit_id
                 WHERE rt.unit_id = '{$unit['unit_id']}'";
         $completeUnit = self::getObjectFromDB($sql);
 
-        $parts = explode("_", $completeUnit['unit_id']);
-        $type = $parts[0];
+        // $parts = explode("_", $completeUnit['unit_id']);
+        // $type = $parts[0];
 
         if (!$completeUnit) {
             throw new BgaSystemException("Unit not found in reinforcement track: " . $unit['unit_id']);
@@ -1283,7 +1380,7 @@ class Fortify extends Table
         // Add the unit back to the units table
         // This is important for refresh page scenario
         $sql = "INSERT INTO units (type, player_id, x, y, unit_id, is_fortified) 
-                VALUES ('$type', {$completeUnit['player_id']}, -1, -1, 
+                VALUES ('{$completeUnit['type']}', {$completeUnit['player_id']}, -1, -1, 
                 '{$completeUnit['unit_id']}', '{$completeUnit['is_fortified']}')";
         self::DbQuery($sql);
 
@@ -1293,7 +1390,7 @@ class Fortify extends Table
 
         // Notify clients about the unit returning to supply
         self::notifyAllPlayers('unitReturnedToSupply', clienttranslate('A ${unit_type} has returned to ${player_name}\'s supply'), [
-            'unit_type' => $type,
+            'unit_type' => $completeUnit['type'],
             'player_name' => self::getPlayerNameById($completeUnit['player_id']),
             'unit_id' => $completeUnit['unit_id'],
             'is_fortified' => $completeUnit['is_fortified'],

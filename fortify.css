@@ -313,3 +313,31 @@
 .artillery.green.fortified {
     background-image: url('img/artillery_green_fortified.png');
 }
+
+#points_display {
+    width: 95%;
+    max-width: 500px;
+    margin: 10px auto;
+    text-align: center;
+    padding: 10px;
+    background-color: #f0f0f0;
+    border-radius: 5px;
+    position: absolute;
+    z-index: 1;
+    left: -500px;
+}
+
+#points_container {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+}
+
+.player_points {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.points_value {
+    font-size: 24px;
+}

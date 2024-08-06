@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS `reinforcement_track` (
     `position` INT NOT NULL,
     `is_fortified` BOOLEAN NOT NULL DEFAULT FALSE,
     `player_id` INT NOT NULL,
+    `type` ENUM('infantry', 'tank', 'battleship', 'chopper', 'artillery') NOT NULL,
     PRIMARY KEY (`unit_id`)
 );
 

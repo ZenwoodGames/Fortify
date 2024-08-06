@@ -31,7 +31,7 @@ define([
                 let attackMode = false;
                 let gameVariant = null;
                 let selectedSpecialUnit = null;
-                let  infantryOnlyMode = false;
+                let infantryOnlyMode = false;
             },
 
             /*
@@ -97,6 +97,9 @@ define([
 
                 // Add event listener for the attack button
                 dojo.connect($('btnAttack'), 'onclick', this, 'onAttackButtonClick');
+
+                $('points_title').innerHTML = gamedatas.POINTS_TITLE;
+                this.setupPointsDisplay(gamedatas.players);
 
                 console.log("Ending game setup");
             },
@@ -392,7 +395,7 @@ define([
                                 this.moveUnit(unitId, unitType, toX, toY);
                             }
                             else {
-                                if(event.target.classList.contains('highlight-target'))
+                                if (event.target.classList.contains('highlight-target'))
                                     this.attack(this.selectedUnit.id, event.target.id);
                                 else
                                     this.showMessage(_("Not a possible move!"), 'info');
@@ -697,6 +700,28 @@ define([
                 }
                 var you = "<span style=\"font-weight:bold;color:" + color + ";" + color_bg + "\">" + __("lang_mainsite", "You") + "</span>";
                 return you;
+            },
+
+            setupPointsDisplay: function (players) {
+                var pointsContainer = $('points_container');
+                for (var playerId in players) {
+                    var player = players[playerId];
+                    var pointsDiv = dojo.create('div', {
+                        id: 'player_points_' + playerId,
+                        class: 'player_points',
+                        innerHTML: '<span style="color:#' + player.color + ';">' + player.name + '</span>: ' +
+                            '<span class="points_value" id="points_value_' + playerId + '">' + player.score + '</span> ' +
+                            this.gamedatas.POINTS_LABEL
+                    }, pointsContainer);
+                }
+            },
+
+            updatePointsDisplay: function (playerId, points) {
+                // Update the points display for the given player
+                var pointsElement = $('points_value_' + playerId);
+                if (pointsElement) {
+                    pointsElement.innerHTML = points;
+                }
             },
 
             ///////////////////////////////////////////////////
@@ -1293,12 +1318,12 @@ define([
                 this.gameVariant = this.gamedatas.gameVariant;
                 //his.gamedatas.players = players;
 
-                Object.keys( this.gamedatas.players).forEach(id => {
+                Object.keys(this.gamedatas.players).forEach(id => {
                     if (players[id]) {
-                     this.gamedatas.players[id].color = players[id].player_color;
+                        this.gamedatas.players[id].color = players[id].player_color;
                     }
                 });
-                
+
                 // Remove all units from the board
                 dojo.query('.board-slot .unit').forEach(dojo.destroy);
                 // Remove all units from the deck
@@ -1405,6 +1430,7 @@ define([
                 dojo.subscribe('reinforcementTrackUpdated', this, "notif_reinforcementTrackUpdated");
                 dojo.subscribe('newVolley', this, "notif_newVolley");
                 dojo.subscribe('updatePlayerPanel', this, "notif_updatePlayerPanel");
+                dojo.subscribe('pointsUpdated', this, "notif_pointsUpdated");
             },
 
             notif_newVolley: function (notif) {
@@ -1427,13 +1453,9 @@ define([
             },
 
             updatePlayerColor: function (playerId, color) {
-                // Update player board color
-                //dojo.removeClass('player_board_' + playerId, 'player_color_red player_color_green');
-                //dojo.addClass('player_board_' + playerId, 'player_color_' + color);
-
                 // Update any other UI elements that depend on player color
                 debugger;
-                if(playerId == this.getCurrentPlayerId())
+                if (playerId == this.getCurrentPlayerId())
                     this.playerColor = color;
             },
 
@@ -1511,16 +1533,6 @@ define([
                     else
                         unitDiv.style.margin = "2px 0 0 7px";
                 }
-
-                // If this is not the active player's move, remove the unit from their deck
-                // if (notif.args.player_id != this.player_id) {
-                //     var deckElement = $('player_deck_' + (playerColor == 'red' ? 'bottom' : 'top'));
-                //     var unitInDeck = deckElement.querySelector('.' + unitType + '.' + playerColor);
-                //     if (unitInDeck) {
-                //         dojo.destroy(unitInDeck);
-                //     }
-                // }
-                //this.resetGameState();
             },
 
             notif_unitMoved: function (notif) {
@@ -1552,10 +1564,6 @@ define([
             },
 
             notif_unitAttacked: function (notif) {
-
-                // Remove the defending unit from the board
-                //dojo.destroy(notif.args.defending_unit_id);
-
                 // Update the reinforcement track
                 debugger;
                 if (notif.args.attacking_unit_type == 'chopper') {
@@ -1575,9 +1583,6 @@ define([
             notif_reinforcementTrackUpdated: function (notif) {
                 debugger;
                 console.log('Notification: Reinforcement track updated', notif);
-
-                // Clear the current reinforcement track display
-                //dojo.query('#reinforcement_track .reinforcement_slot').forEach(dojo.empty);
 
                 // Update the reinforcement track with the new state
                 for (var unitId in notif.args.reinforcementTrack) {
@@ -1626,6 +1631,11 @@ define([
                     class: 'unit ' + unitType + ' ' + playerColor
                 });
                 return unitDiv;
+            },
+
+            notif_pointsUpdated: function (notif) {
+                debugger;
+                this.updatePointsDisplay(notif.args.playerId, notif.args.points);
             }
         });
     });
