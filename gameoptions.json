@@ -8,11 +8,19 @@
         "tmdisplay": "Learning"
       },
       "2": {
-        "name": "Base"
+        "name": "4x5 Base"
       },
       "3": {
-        "name": "Special warfare",
-        "tmdisplay": "Special Warfare"
+        "name": "4x5 Special Warfare",
+        "tmdisplay": "4x5 Special Warfare"
+      },
+      "4": {
+        "name": "5x5 Base",
+        "tmdisplay":"5x5 Base"
+      },
+      "5": {
+        "name" : "5x5 Special Warfare",
+        "tmdisplay" : "5x5 Special Warfare"
       }
     },
     "default": 2
