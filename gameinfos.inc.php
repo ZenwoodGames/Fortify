@@ -19,7 +19,7 @@ $gameinfos = array(
 'publisher' => 'Zenwood Games',                     
 
 // Url of game publisher website
-'publisher_website' => 'http://www.mypublishingcompany.com/',   
+'publisher_website' => 'https://zenwoodgames.com/',   
 
 // Board Game Geek ID of the publisher
 'publisher_bgg_id' => 50690,
