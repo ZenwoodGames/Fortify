@@ -267,6 +267,9 @@ class Fortify extends Table
 
     private function calculateAndUpdatePoints($playerId)
     {
+        $this->serverLog("Inside calculateAndUpdatePoints method", "");
+        $this->serverLog("playerId", $playerId);
+
         $points = 0;
 
         // Points for fortified units on the board
@@ -580,7 +583,8 @@ class Fortify extends Table
             }
         }
 
-        $this->calculateAndUpdatePoints($player_id);
+        //$this->calculateAndUpdatePoints($player_id);
+        //$this->calculateAndUpdatePoints($this->getPlayerAfter($player_id));
     }
 
     /**
@@ -723,7 +727,8 @@ class Fortify extends Table
             $this->gamestate->nextState('stayInState');
         }
 
-        $this->calculateAndUpdatePoints($player_id);
+        // $this->calculateAndUpdatePoints($player_id);
+        // $this->calculateAndUpdatePoints($this->getPlayerAfter($player_id));
     }
 
     function isValidMove($player_color, $fromX, $fromY, $toX, $toY)
@@ -838,7 +843,8 @@ class Fortify extends Table
             $this->gamestate->nextState('stayInState');
         }
 
-        $this->calculateAndUpdatePoints($player_id);
+        //$this->calculateAndUpdatePoints($player_id);
+        //$this->calculateAndUpdatePoints($this->getPlayerAfter($player_id));
     }
 
     private function findValidFormation($centerUnit, $adjacentUnits)
@@ -1278,8 +1284,8 @@ class Fortify extends Table
         // Decrease the action counter
         $this->decreaseActionCounter();
 
-        $this->calculateAndUpdatePoints($player_id);
-        $this->calculateAndUpdatePoints($this->getPlayerAfter($player_id));
+        //$this->calculateAndUpdatePoints($player_id);
+        //$this->calculateAndUpdatePoints($this->getPlayerAfter($player_id));
     }
 
     private function getUnitDetails($unitId)
@@ -1454,7 +1460,6 @@ class Fortify extends Table
 
         $players = self::loadPlayersBasicInfos();
         $activePlayerId = self::getActivePlayerId();
-        $this->serverLog("activePlayerId", $activePlayerId);
         $endVolley = false;
         $isFirstRound = $this->getGameStateValue('isFirstRound');
         // $this->serverLog("isFirstRound inside checkgameend", $isFirstRound);
@@ -1473,6 +1478,10 @@ class Fortify extends Table
             self::notifyAllPlayers('debug', 'All units fortified', array());
         }
         $this->serverLog("playerVolleyWins", $this->playerVolleyWins);
+        $this->serverLog("activePlayerId", $activePlayerId);
+
+        $this->calculateAndUpdatePoints($activePlayerId);
+        $this->calculateAndUpdatePoints($this->getPlayerAfter($activePlayerId));
 
         if ($endVolley) {
             $this->volleyCount++;
