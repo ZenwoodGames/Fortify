@@ -172,6 +172,10 @@ define([
 
             handleUnitClick: function (event) {
                 debugger;
+                if(event.target.parentNode.classList.contains("reinforcement_slot")){
+                    return;
+                }
+                
                 if (this.infantryOnlyMode && !event.target.classList.contains('infantry')) {
                     this.showMessage(_("You must select an infantry unit"), 'error');
                     return;
