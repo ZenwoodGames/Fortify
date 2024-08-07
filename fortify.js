@@ -333,7 +333,14 @@ define([
                         slot = event.target;
 
                     // Fortify action
-                    if (this.isSlotOccupied(slot) && this.fortifyMode && this.getUnitDetails(event.target).player_id == this.player_id) {
+                    if (this.isSlotOccupied(slot) && this.fortifyMode 
+                        && this.getUnitDetails(event.target).player_id == this.player_id) {
+                        if(this.getUnitDetails(event.target).is_fortified == true){
+                            this.showMessage(_("Select a non-fortified unit."), 'info');
+                            this.exitFortifyMode();
+                            this.deselectUnit();
+                            return;
+                        }
                         this.fortify(this.selectedUnit.id);
                         return;
                     }
@@ -837,13 +844,8 @@ define([
 
             exitFortifyMode: function () {
                 this.fortifyMode = false;
-                // dojo.removeClass('btnFortify', 'active');
-                // this.showMessage(_("Fortify mode deactivated"), 'info');
-
-                // // Remove click listeners from all units
-                // dojo.query('.unit').forEach(dojo.hitch(this, function(unitNode) {
-                //     dojo.disconnect(unitNode, 'onclick', this, 'onUnitClick');
-                // }));
+                dojo.removeClass('btnFortify', 'active');
+                this.showMessage(_("Fortify mode deactivated"), 'info');
             },
 
             fortify: function (unitId) {
@@ -857,14 +859,12 @@ define([
                     }, this, function (result) {
                         this.removeUnitHighlight();
                         this.removeSlotHighlight();
-                        dojo.removeClass('btnFortify', 'active');
-                        this.fortifyMode = false;
+                        this.exitFortifyMode();
                     }, function (is_error) {
                         if (is_error) {
                             this.removeUnitHighlight();
                             this.removeSlotHighlight();
-                            dojo.removeClass('btnFortify', 'active');
-                            this.fortifyMode = false;
+                            this.exitFortifyMode();
                         }
                     });
                 }
