@@ -30,30 +30,6 @@
             <div id="board">
                 <div id="slots_container">
                     <!-- Board slots for placing units -->
-                    <div id="board_slot_0_0" class="board-slot water" data-x="0" data-y="0"></div>
-                    <div id="board_slot_1_0" class="board-slot water" data-x="1" data-y="0"></div>
-                    <div id="board_slot_2_0" class="board-slot water" data-x="2" data-y="0"></div>
-                    <div id="board_slot_3_0" class="board-slot shore" data-x="3" data-y="0"></div>
-
-                    <div id="board_slot_0_1" class="board-slot water" data-x="0" data-y="1"></div>
-                    <div id="board_slot_1_1" class="board-slot water" data-x="1" data-y="1"></div>
-                    <div id="board_slot_2_1" class="board-slot shore" data-x="2" data-y="1"></div>
-                    <div id="board_slot_3_1" class="board-slot land" data-x="3" data-y="1"></div>
-
-                    <div id="board_slot_0_2" class="board-slot water" data-x="0" data-y="2"></div>
-                    <div id="board_slot_1_2" class="board-slot shore" data-x="1" data-y="2"></div>
-                    <div id="board_slot_2_2" class="board-slot land" data-x="2" data-y="2"></div>
-                    <div id="board_slot_3_2" class="board-slot land" data-x="3" data-y="2"></div>
-
-                    <div id="board_slot_0_3" class="board-slot shore" data-x="0" data-y="3"></div>
-                    <div id="board_slot_1_3" class="board-slot land" data-x="1" data-y="3"></div>
-                    <div id="board_slot_2_3" class="board-slot land" data-x="2" data-y="3"></div>
-                    <div id="board_slot_3_3" class="board-slot land" data-x="3" data-y="3"></div>
-
-                    <div id="board_slot_0_4" class="board-slot land" data-x="0" data-y="4"></div>
-                    <div id="board_slot_1_4" class="board-slot land" data-x="1" data-y="4"></div>
-                    <div id="board_slot_2_4" class="board-slot land" data-x="2" data-y="4"></div>
-                    <div id="board_slot_3_4" class="board-slot land" data-x="3" data-y="4"></div>
                 </div>
                 <div id="reinforcement_track">
                     <!-- Reinforcement track slots -->

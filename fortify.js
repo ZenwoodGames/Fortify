@@ -32,6 +32,8 @@ define([
                 let gameVariant = null;
                 let selectedSpecialUnit = null;
                 let infantryOnlyMode = false;
+                let boardSize = '';
+                let unitMarginStyle = '';
             },
 
             /*
@@ -48,7 +50,7 @@ define([
             */
 
             setup: function (gamedatas) {
-
+                debugger;
                 console.log("Starting game setup");
 
                 this.playerColor = gamedatas.players[this.player_id].color;
@@ -64,9 +66,32 @@ define([
                     dojo.style($('player_deck_top'), 'width', '600px');
                     dojo.style($('player_deck_bottom'), 'width', '600px');
                 }
-                debugger;
+
                 // Initialize the game board
-                //this.initBoard(gamedatas);
+                this.initBoard(gamedatas);
+
+                if (gamedatas.gameVariant == 4 || gamedatas.gameVariant == 5) {
+                    this.boardSize = '5x5';
+                    let board = $('board');
+
+                    board.style.width = '460px';
+                    board.style.height = '460px';
+
+                    this.unitMarginStyle = '2px 0px 0px 0px';
+
+                    let reinforcementTrack = $('reinforcement_track');
+                    reinforcementTrack.style.right = '-10px';
+                    reinforcementTrack.style.top = '44px';
+
+                    dojo.query('.reinforcement_slot').forEach(reinforcementTrack => {
+                        reinforcementTrack.style.height = '64px';
+                    });
+                }
+                else {
+                    this.unitMarginStyle = '2px 0px 0px 7px ';
+                    this.boardSize = '4x5';
+                }
+                this.generateBoardSlots(this.boardSize);
 
                 // Initialize player decks
                 this.initPlayerDecks(gamedatas);
@@ -118,22 +143,27 @@ define([
                         if (this.isSlotOccupied(slot))
                             unitDiv.style = "margin: 0 -75px";
                         else
-                            unitDiv.style = "margin: 2px 0 0 7px";
+                            unitDiv.style = `margin: ${this.unitMarginStyle}`;
                     }
                     else {
                         if (this.isSlotOccupied(slot)) {
                             // Chopper already got attached
                             slot.firstChild.style = "margin: 0 -75px";
-                            unitDiv.style = "margin: 2px 0 0 7px";
+                            unitDiv.style = `margin: ${this.unitMarginStyle}`;
                             slot.insertBefore(unitDiv, slot.firstChild);
                             return;
                         }
-                        unitDiv.style = "margin: 2px 0 0 7px";
+                        unitDiv.style = `margin: ${this.unitMarginStyle}`;
                     }
                     slot.appendChild(unitDiv);
                 }
-                if (is_fortified == 1)
+                if (is_fortified == 1){
+                    debugger;
                     this.updateToFortifiedUnit(unitDiv);
+                    if(x == -1 && y == -1){
+                        dojo.place(unitDiv, $(`${unitType}_deck_fortified`));
+                    }
+                }
             },
 
             removeUnitHighlight: function () {
@@ -172,10 +202,10 @@ define([
 
             handleUnitClick: function (event) {
                 debugger;
-                if(event.target.parentNode.classList.contains("reinforcement_slot")){
+                if (event.target.parentNode.classList.contains("reinforcement_slot")) {
                     return;
                 }
-                
+
                 if (this.infantryOnlyMode && !event.target.classList.contains('infantry')) {
                     this.showMessage(_("You must select an infantry unit"), 'error');
                     return;
@@ -333,9 +363,9 @@ define([
                         slot = event.target;
 
                     // Fortify action
-                    if (this.isSlotOccupied(slot) && this.fortifyMode 
+                    if (this.isSlotOccupied(slot) && this.fortifyMode
                         && this.getUnitDetails(event.target).player_id == this.player_id) {
-                        if(this.getUnitDetails(event.target).is_fortified == true){
+                        if (this.getUnitDetails(event.target).is_fortified == true) {
                             this.showMessage(_("Select a non-fortified unit."), 'info');
                             this.exitFortifyMode();
                             this.deselectUnit();
@@ -423,8 +453,10 @@ define([
                         if (this.isSlotOccupied(slot)) {
                             if (this.getUnitDetails(this.selectedUnit).player_id == this.player_id) {
                                 this.highlightValidMoves();
-                                if (!this.selectedUnit.classList.contains('chopper'))
+                                if (!this.selectedUnit.classList.contains('chopper')){
+                                    debugger;
                                     this.highlightValidTargets(this.getUnitDetails(this.selectedUnit));
+                                }
                                 else {
                                     // this.showMessage(_("A Chopper can only attack an enemy unit that is directly beneath it"), 'info');
                                 }
@@ -484,10 +516,17 @@ define([
             },
 
             initBoard: function (gamedatas) {
+                if (gamedatas.gameVariant == 4 || gamedatas.gameVariant == 5) {
+                    dojo.addClass($('board'), 'board5');
+                }
+                else {
+                    dojo.addClass($('board'), 'board4');
 
+                }
             },
 
             initPlayerDecks: function (gamedatas) {
+                debugger;
                 const playerDeckBottom = document.getElementById('player_deck_bottom');
                 const playerDeckTop = document.getElementById('player_deck_top');
 
@@ -512,6 +551,7 @@ define([
             },
 
             populateDeck: function (deckElement, decks) {
+                debugger;
                 for (const type in decks) {
                     const unitDeck = deckElement.querySelector(`.${type}_deck`);
                     if (decks[type]) {
@@ -735,6 +775,69 @@ define([
                 }
             },
 
+            generateBoardSlots: function (gridSize) {
+                // Define the structure of the board based on grid size
+                let boardStructure;
+                // Get the container element
+                const slotsContainer = document.getElementById('slots_container');
+
+                if (gridSize === '4x5') {
+                    boardStructure = [
+                        ['water', 'water', 'water', 'shore'],
+                        ['water', 'water', 'shore', 'land'],
+                        ['water', 'shore', 'land', 'land'],
+                        ['shore', 'land', 'land', 'land'],
+                        ['land', 'land', 'land', 'land']
+                    ];
+                } else if (gridSize === '5x5') {
+                    boardStructure = [
+                        ['water', 'water', 'shore', 'land', 'land'],
+                        ['water', 'water', 'shore', 'land', 'land'],
+                        ['water', 'water', 'shore', 'land', 'land'],
+                        ['water', 'water', 'shore', 'land', 'land'],
+                        ['water', 'water', 'shore', 'land', 'land']
+                    ];
+
+                    slotsContainer.style.width = '83%';
+                    slotsContainer.style.height = '81%';
+                    slotsContainer.style.left = '29px';
+                    slotsContainer.style.top = '41px';
+                } else {
+                    console.error('Invalid grid size. Use "4x5" or "5x5".');
+                    return;
+                }
+
+
+
+                // Clear any existing content
+                slotsContainer.innerHTML = '';
+
+                // Set the grid layout based on the size
+                slotsContainer.style.gridTemplateColumns = `repeat(${boardStructure[0].length}, 1fr)`;
+
+
+                // Loop through the board structure and create slots
+                for (let y = 0; y < boardStructure.length; y++) {
+                    for (let x = 0; x < boardStructure[y].length; x++) {
+                        // Create a new div element for the slot
+                        const slot = document.createElement('div');
+
+                        // Set the id attribute
+                        slot.id = `board_slot_${x}_${y}`;
+
+                        // Set the class attributes
+                        slot.className = `board-slot ${boardStructure[y][x]}`;
+
+                        // Set data attributes
+                        slot.dataset.x = x;
+                        slot.dataset.y = y;
+
+                        // Append the slot to the container
+                        slotsContainer.appendChild(slot);
+                    }
+                }
+            },
+
             ///////////////////////////////////////////////////
             //// Player's action
 
@@ -941,6 +1044,7 @@ define([
             },
 
             highlightAdjacentTargets: function (attackingUnit) {
+                debugger;
                 var adjacentUnits = this.getAdjacentUnits(attackingUnit, true);
 
                 adjacentUnits.forEach(unit => {
@@ -980,7 +1084,7 @@ define([
                     var adjacentY = parseInt(unit.y) + dir.dy;
 
                     // Check if the adjacent position is within the board boundaries
-                    if (adjacentX >= 0 && adjacentX < 4 && adjacentY >= 0 && adjacentY < 5) {
+                    if (adjacentX >= 0 && adjacentX < 5 && adjacentY >= 0 && adjacentY < 5) {
                         var adjacentSlot = $('board_slot_' + adjacentX + '_' + adjacentY);
                         var adjacentUnit = adjacentSlot.querySelector('.unit');
 
@@ -1048,7 +1152,7 @@ define([
                     lock: true
                 }, this, function (result) {
                     debugger;
-                    this.selectedSpecialUnit ? dojo.style(this.selectedSpecialUnit, 'margin', '2px 0px 0px 7px;') : null;
+                    this.selectedSpecialUnit ? dojo.style(this.selectedSpecialUnit, 'margin', this.unitMarginStyle) : null;
 
                     this.removeUnitHighlight();
                     this.removeSlotHighlight();
@@ -1070,12 +1174,6 @@ define([
             },
 
             updateReinforcementTrack: function (reinforcementTrack) {
-
-                // Clear existing units from reinforcement track
-                //dojo.query('#reinforcement_track .reinforcement_slot').forEach(function (slot) {
-                //    dojo.empty(slot);
-                //});
-
                 // Move units to reinforcement track
                 for (var position in reinforcementTrack) {
                     var unit = reinforcementTrack[position];
@@ -1366,15 +1464,6 @@ define([
 
                 this.addEventListenserForActionButtons(this.gamedatas.gamestate.possibleactions);
 
-                // for (var i in this.gamedatas.units) {
-                //     var unit = this.gamedatas.units[i];
-                //     this.placeUnitOnBoard(unit.unit_id, unit.type, unit.x, unit.y, unit.player_id, unit.is_fortified);
-                // }
-
-                // // Initialize the reinforcement track
-                // if (this.gamedatas.reinforcementTrack)
-                //     this.updateReinforcementTrack(this.gamedatas.reinforcementTrack);
-
                 // Add event listener for the attack button
                 dojo.connect($('btnAttack'), 'onclick', this, 'onAttackButtonClick');
             },
@@ -1535,7 +1624,7 @@ define([
                     if (specialUnitId)
                         unitDiv.style.margin = "0 -75px";
                     else
-                        unitDiv.style.margin = "2px 0 0 7px";
+                        unitDiv.style.margin = this.unitMarginStyle;
                 }
             },
 
@@ -1550,7 +1639,7 @@ define([
                         unit.style = "margin: 0px -75px";
                     }
                     else {
-                        unit.style = "margin: 2px 0px 0px 7px";
+                        unit.style = `margin: ${this.unitMarginStyle}`;
                     }
                     toSlot.appendChild(unit);
                 }
@@ -1571,7 +1660,7 @@ define([
                 // Update the reinforcement track
                 debugger;
                 if (notif.args.attacking_unit_type == 'chopper') {
-                    dojo.style($(notif.args.attacking_unit_id), 'margin', '2px 0px 0px 7px');
+                    dojo.style($(notif.args.attacking_unit_id), 'margin', this.unitMarginStyle);
                 }
 
                 this.updateReinforcementTrack(notif.args.reinforcementTrack);

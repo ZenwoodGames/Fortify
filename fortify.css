@@ -1,7 +1,7 @@
 /**
  *------
  * BGA framework: Gregory Isabelli & Emmanuel Colin & BoardGameArena
- * Fortify implementation : © <Your name here> <Your email address here>
+ * Fortify implementation : © Nirmatt Gopal nrmtgpl@gmail.com
  *
  * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
  * See http://en.boardgamearena.com/#!doc/Studio for more information.
@@ -88,11 +88,18 @@
 #board {
     width: 424px;
     height: 428px;
-    background-image: url('img/board.png');
     position: relative;
     margin: auto;
     background-size: 100% 100%;
     background-repeat: no-repeat;
+}
+
+.board4{
+    background-image: url('img/board.png');
+}
+
+.board5{
+    background-image: url('img/board5.png');
 }
 
 #slots_container {
@@ -137,14 +144,14 @@
     background-color: #34d9a7;
     height: 100px;
     border-radius: 22px;
-    width: 437px;
+    width: 500px;
 }
 
 #player_deck_bottom {
     background-color: #ff8b8b;
     height: 100px;
     border-radius: 22px;
-    width: 437px;
+    width: 500px;
 }
 
 .unit_deck {

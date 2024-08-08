@@ -404,10 +404,17 @@ class Fortify extends Table
         }
 
         // Validate the coordinates
-        if ($x < 0 || $x > 3 || $y < 0 || $y > 4) {
-            throw new BgaUserException(self::_("Invalid coordinates"));
+        if(self::getGameStateValue('gameVariant') == 4 || self::getGameStateValue('gameVariant') == 4){
+            if ($x < 0 || $x > 4 || $y < 0 || $y > 4) {
+                throw new BgaUserException(self::_("Invalid coordinates"));
+            }
         }
-
+        else{
+            if ($x < 0 || $x > 3 || $y < 0 || $y > 4) {
+                throw new BgaUserException(self::_("Invalid coordinates"));
+            }
+        }
+        
         // Check if the space is empty
         if ($unitType != 'chopper') {
             $sql = "SELECT COUNT(*) FROM units WHERE x = $x AND y = $y";
@@ -1029,10 +1036,22 @@ class Fortify extends Table
     // Helper function to get the space type (you may need to implement this based on your game board structure)
     private function getSpaceType($x, $y)
     {
-        $shoreSpaces = [
-            [0, 3], [1, 2], [2, 1], [3, 0],
-        ];
+        $this->serverLog("Entered getSpaceType method", "");
+        $this->serverLog("GameVariant =", self::getGameStateValue('gameVariant'));
+        $this->serverLog("x =", $x);
+        $this->serverLog("y =", $y);
 
+        if(self::getGameStateValue('gameVariant') == 4 || self::getGameStateValue('gameVariant') == 5){
+            $shoreSpaces = [
+                [2,0],[2, 1], [2, 2], [2, 3], [2, 4],
+            ];
+        }
+        else{
+            $shoreSpaces = [
+                [0, 3], [1, 2], [2, 1], [3, 0],
+            ];
+        }
+        
         foreach ($shoreSpaces as $space) {
             if ($space[0] == $x && $space[1] == $y) {
                 return 'shore';
