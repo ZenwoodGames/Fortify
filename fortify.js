@@ -1093,6 +1093,7 @@ define([
                     // Check if the adjacent position is within the board boundaries
                     if (adjacentX >= 0 && adjacentX < 5 && adjacentY >= 0 && adjacentY < 5) {
                         var adjacentSlot = $('board_slot_' + adjacentX + '_' + adjacentY);
+                        if(!adjacentSlot) return;
                         var adjacentUnit = adjacentSlot.querySelector('.unit');
 
                         if (adjacentUnit) {
