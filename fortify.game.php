@@ -404,17 +404,16 @@ class Fortify extends Table
         }
 
         // Validate the coordinates
-        if(self::getGameStateValue('gameVariant') == 4 || self::getGameStateValue('gameVariant') == 4){
+        if (self::getGameStateValue('gameVariant') == 4 || self::getGameStateValue('gameVariant') == 4) {
             if ($x < 0 || $x > 4 || $y < 0 || $y > 4) {
                 throw new BgaUserException(self::_("Invalid coordinates"));
             }
-        }
-        else{
+        } else {
             if ($x < 0 || $x > 3 || $y < 0 || $y > 4) {
                 throw new BgaUserException(self::_("Invalid coordinates"));
             }
         }
-        
+
         // Check if the space is empty
         if ($unitType != 'chopper') {
             $sql = "SELECT COUNT(*) FROM units WHERE x = $x AND y = $y";
@@ -951,10 +950,16 @@ class Fortify extends Table
         $bottomLeftUnit = $this->findBattleshipAtPosition($nearbyBattleships, $centerX - 1, $centerY + 1);
 
         $this->serverLog("Adjacent Units", [
-            'Top' => $topUnit, 'Bottom' => $bottomUnit, 'Left' => $leftUnit, 'Right' => $rightUnit,
-            'FarBottom' => $farBottomUnit, 'FarRight' => $farRightUnit,
-            'TopRight' => $topRightUnit, 'BottomRight' => $bottomRightUnit,
-            'TopLeft' => $topLeftUnit, 'BottomLeft' => $bottomLeftUnit
+            'Top' => $topUnit,
+            'Bottom' => $bottomUnit,
+            'Left' => $leftUnit,
+            'Right' => $rightUnit,
+            'FarBottom' => $farBottomUnit,
+            'FarRight' => $farRightUnit,
+            'TopRight' => $topRightUnit,
+            'BottomRight' => $bottomRightUnit,
+            'TopLeft' => $topLeftUnit,
+            'BottomLeft' => $bottomLeftUnit
         ]);
 
         // Check all possible formations
@@ -1041,17 +1046,23 @@ class Fortify extends Table
         $this->serverLog("x =", $x);
         $this->serverLog("y =", $y);
 
-        if(self::getGameStateValue('gameVariant') == 4 || self::getGameStateValue('gameVariant') == 5){
+        if (self::getGameStateValue('gameVariant') == 4 || self::getGameStateValue('gameVariant') == 5) {
             $shoreSpaces = [
-                [2,0],[2, 1], [2, 2], [2, 3], [2, 4],
+                [2, 0],
+                [2, 1],
+                [2, 2],
+                [2, 3],
+                [2, 4],
+            ];
+        } else {
+            $shoreSpaces = [
+                [0, 3],
+                [1, 2],
+                [2, 1],
+                [3, 0],
             ];
         }
-        else{
-            $shoreSpaces = [
-                [0, 3], [1, 2], [2, 1], [3, 0],
-            ];
-        }
-        
+
         foreach ($shoreSpaces as $space) {
             if ($space[0] == $x && $space[1] == $y) {
                 return 'shore';
@@ -1333,6 +1344,11 @@ class Fortify extends Table
 
     private function areUnitsAdjacent($unit1, $unit2)
     {
+        $this->serverLog("Entered areUnitsAdjacent method", "");
+        $this->serverLog("unit1 x", $unit1['x']);
+        $this->serverLog("unit1 y", $unit1['y']);
+        $this->serverLog("unit2 x", $unit2['x']);
+        $this->serverLog("unit2 y", $unit2['y']);
         $dx = abs($unit1['x'] - $unit2['x']);
         $dy = abs($unit1['y'] - $unit2['y']);
         return ($dx + $dy == 1);
@@ -1480,10 +1496,6 @@ class Fortify extends Table
         $players = self::loadPlayersBasicInfos();
         $activePlayerId = self::getActivePlayerId();
         $endVolley = false;
-        $isFirstRound = $this->getGameStateValue('isFirstRound');
-        // $this->serverLog("isFirstRound inside checkgameend", $isFirstRound);
-        $isVeryFirstTurn = $this->getGameStateValue('isVeryFirstTurn');
-        // $this->serverLog("isVeryFirstTurn inside checkgameend", $isVeryFirstTurn);
 
         // Check for 2x2 fortification
         if ($this->check2x2Fortification($activePlayerId)) {
@@ -1496,29 +1508,29 @@ class Fortify extends Table
             $endVolley = true;
             self::notifyAllPlayers('debug', 'All units fortified', array());
         }
-        $this->serverLog("playerVolleyWins", $this->playerVolleyWins);
-        $this->serverLog("activePlayerId", $activePlayerId);
 
         $this->calculateAndUpdatePoints($activePlayerId);
         $this->calculateAndUpdatePoints($this->getPlayerAfter($activePlayerId));
 
         if ($endVolley) {
-            $this->volleyCount++;
-            $this->serverLog("volleyCount", $this->volleyCount);
+            $this->incrementVolleyCount();
+            $this->incrementPlayerVolleyWins($activePlayerId);
 
-            $this->playerVolleyWins[$activePlayerId] = isset($this->playerVolleyWins[$activePlayerId])
-                ? $this->playerVolleyWins[$activePlayerId] + 1
-                : 1;
+            $volleyCount = $this->getVolleyCount();
+            $playerWins = $this->getPlayerVolleyWins($activePlayerId);
+
+            $this->serverLog("volleyCount", $volleyCount);
+            $this->serverLog("playerVolleyWins", $playerWins);
 
             // Check if a player has won 2 volleys
-            if ($this->playerVolleyWins[$activePlayerId] == 2) {
+            if ($playerWins == 2) {
                 // End the game
                 $this->gamestate->nextState('endGame');
                 return true;
             }
 
             // Start a new volley if the game hasn't ended
-            if ($this->volleyCount < 3) {
+            if ($volleyCount < 3) {
                 $this->gamestate->nextState('newVolley');
                 return true;
             } else {
@@ -1529,6 +1541,31 @@ class Fortify extends Table
         }
 
         return false;
+    }
+
+    // Helper methods for database operations
+    private function incrementVolleyCount()
+    {
+        $sql = "INSERT INTO game_progress (volley_count) VALUES (1) 
+            ON DUPLICATE KEY UPDATE volley_count = volley_count + 1";
+        self::DbQuery($sql);
+    }
+
+    private function getVolleyCount()
+    {
+        return self::getUniqueValueFromDB("SELECT DISTINCT volley_count FROM game_progress");
+    }
+
+    private function incrementPlayerVolleyWins($playerId)
+    {
+        $sql = "INSERT INTO player_volley_wins (player_id, wins) VALUES ($playerId, 1)
+            ON DUPLICATE KEY UPDATE wins = wins + 1";
+        self::DbQuery($sql);
+    }
+
+    private function getPlayerVolleyWins($playerId)
+    {
+        return self::getUniqueValueFromDB("SELECT wins FROM player_volley_wins WHERE player_id = $playerId");
     }
 
     private function check2x2Fortification($playerId)
