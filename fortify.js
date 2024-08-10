@@ -161,7 +161,14 @@ define([
                     debugger;
                     this.updateToFortifiedUnit(unitDiv);
                     if(x == -1 && y == -1){
-                        dojo.place(unitDiv, $(`${unitType}_deck_fortified`));
+                        var playerDeck;
+                        if(unitDiv.classList[2] == 'red'){
+                            playerDeck = dojo.query('#player_deck_bottom > #infantry_deck_fortified')[0];
+                        }
+                        else{
+                            playerDeck = dojo.query('#player_deck_top > #infantry_deck_fortified')[0];
+                        }
+                        dojo.place(unitDiv, playerDeck);
                     }
                 }
             },
