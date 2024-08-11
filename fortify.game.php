@@ -357,6 +357,10 @@ class Fortify extends Table
         return self::getUniqueValueFromDB($sql);
     }
 
+    private function getGameVariant(){
+        return self::getGameStateValue('gameVariant');
+    }
+
     //////////////////////////////////////////////////////////////////////////////
     //////////// Player actions
     //////////// 
@@ -421,13 +425,6 @@ class Fortify extends Table
             if ($count > 0) {
                 throw new BgaUserException(self::_("This space is already occupied"));
             }
-        }
-
-        // Check if the player has available units of this type
-        $sql = "SELECT COUNT(*) FROM units WHERE player_id = $player_id AND type = '$unitType'";
-        $count = self::getUniqueValueFromDB($sql);
-        if ($count >= 4) {
-            throw new BgaUserException(self::_("You have no more units of this type available"));
         }
 
         $this->serverLog("unitType", $unitType);
@@ -1607,13 +1604,28 @@ class Fortify extends Table
 
     private function checkAllUnitsFortified($playerId)
     {
-        $sql = "SELECT COUNT(*) as count FROM units WHERE player_id = $playerId";
-        $totalUnits = self::getUniqueValueFromDB($sql);
+        $this->serverLog("Entered checkAllUnitsFortified method", "");
+
+        if($this->getGameVariant() == 1 || $this->getGameVariant() == 2 || $this->getGameVariant() == 4){
+            $totalUnits = 12;
+        }
+        else{
+            $totalUnits = 14;
+        }
+
+        $this->serverLog("totalUnits", $totalUnits);
 
         $sql = "SELECT COUNT(*) as count FROM units WHERE player_id = $playerId AND is_fortified = 1";
         $fortifiedUnits = self::getUniqueValueFromDB($sql);
 
-        return $totalUnits == 12 && $totalUnits == $fortifiedUnits;
+        $this->serverLog("fortifiedUnits", $fortifiedUnits);
+
+        $sql = "SELECT COUNT(*) as count FROM reinforcement_track WHERE player_id = $playerId AND is_fortified = 1";
+        $reinforcementfortifiedUnits = self::getUniqueValueFromDB($sql);
+
+        $this->serverLog("reinforcementfortifiedUnits", $reinforcementfortifiedUnits);
+
+        return $totalUnits == $fortifiedUnits + $reinforcementfortifiedUnits;
     }
 
     private function getBoard()
