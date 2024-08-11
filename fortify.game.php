@@ -547,10 +547,19 @@ class Fortify extends Table
             }
             if ($infantryEnlistCount != 1) {
                 // Check if all players have placed their first unit
+
+                $this->serverLog("Check if all players have placed their first unit", "");
+                
                 $sql = "SELECT COUNT(*) FROM units";
                 $unitCount = self::getUniqueValueFromDB($sql);
-                if ($unitCount == count($this->loadPlayersBasicInfos())) {
+
+                $this->serverLog("unitCount", $unitCount);
+                $this->serverLog("playerCount", count($this->loadPlayersBasicInfos()));
+
+                if ($unitCount >= count($this->loadPlayersBasicInfos())) {
                     // If all players have placed their first unit, end first round
+                    $this->serverLog("If all players have placed their first unit, end first round", "");
+
                     $this->setGameStateValue('isFirstRound', 0);
                 }
             }
