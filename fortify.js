@@ -34,6 +34,8 @@ define([
                 let infantryOnlyMode = false;
                 let boardSize = '';
                 let unitMarginStyle = '';
+                let helpButton = null;
+                let referenceCards = null;
             },
 
             /*
@@ -126,6 +128,8 @@ define([
                 $('points_title').innerHTML = gamedatas.POINTS_TITLE;
                 this.setupPointsDisplay(gamedatas.players);
 
+                this.setupHelpButton();
+
                 console.log("Ending game setup");
             },
 
@@ -157,15 +161,15 @@ define([
                     }
                     slot.appendChild(unitDiv);
                 }
-                if (is_fortified == 1){
+                if (is_fortified == 1) {
                     debugger;
                     this.updateToFortifiedUnit(unitDiv);
-                    if(x == -1 && y == -1){
+                    if (x == -1 && y == -1) {
                         var playerDeck;
-                        if(unitDiv.classList[2] == 'red'){
+                        if (unitDiv.classList[2] == 'red') {
                             playerDeck = dojo.query('#player_deck_bottom > #infantry_deck_fortified')[0];
                         }
-                        else{
+                        else {
                             playerDeck = dojo.query('#player_deck_top > #infantry_deck_fortified')[0];
                         }
                         dojo.place(unitDiv, playerDeck);
@@ -460,7 +464,7 @@ define([
                         if (this.isSlotOccupied(slot)) {
                             if (this.getUnitDetails(this.selectedUnit).player_id == this.player_id) {
                                 this.highlightValidMoves();
-                                if (!this.selectedUnit.classList.contains('chopper')){
+                                if (!this.selectedUnit.classList.contains('chopper')) {
                                     debugger;
                                     this.highlightValidTargets(this.getUnitDetails(this.selectedUnit));
                                 }
@@ -845,6 +849,32 @@ define([
                 }
             },
 
+            setupHelpButton: function () {
+                this.helpButton = $('help-button');
+                this.referenceCards = $('reference-cards');
+
+                dojo.connect(this.helpButton, 'onmouseenter', this, 'showReferenceCards');
+                dojo.connect(this.helpButton, 'onmouseleave', this, 'hideReferenceCards');
+            },
+
+            showReferenceCards: function () {
+                var playerColor = this.gamedatas.players[this.player_id].color;
+                var cardFolder = this.gamedatas.players[this.player_id].color;
+
+                $('reference-card-1').src = g_gamethemeurl + 'img/' + cardFolder + '_reference_1.png';
+                $('reference-card-2').src = g_gamethemeurl + 'img/' + cardFolder + '_reference_2.png';
+
+                dojo.style(this.referenceCards, 'display', 'inline');
+                dojo.style('reference-card-1', 'display', 'inline');
+                dojo.style('reference-card-2', 'display', 'inline');
+            },
+
+            hideReferenceCards: function () {
+                dojo.style(this.referenceCards, 'display', 'none');
+                dojo.style('reference-card-1', 'display', 'none');
+                dojo.style('reference-card-2', 'display', 'none');
+            },
+
             ///////////////////////////////////////////////////
             //// Player's action
 
@@ -1093,7 +1123,7 @@ define([
                     // Check if the adjacent position is within the board boundaries
                     if (adjacentX >= 0 && adjacentX < 5 && adjacentY >= 0 && adjacentY < 5) {
                         var adjacentSlot = $('board_slot_' + adjacentX + '_' + adjacentY);
-                        if(!adjacentSlot) return;
+                        if (!adjacentSlot) return;
                         var adjacentUnit = adjacentSlot.querySelector('.unit');
 
                         if (adjacentUnit) {

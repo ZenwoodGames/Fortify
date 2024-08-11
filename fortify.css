@@ -348,3 +348,37 @@
 .points_value {
     font-size: 24px;
 }
+
+#help-button {
+    /* position: fixed; */
+    top: 20px;
+    right: 20px;
+    width: 30px;
+    height: 30px;
+    background-color: #007bff;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    font-weight: bold;
+    z-index: 1000;
+}
+
+#reference-cards {
+    position: fixed;
+    top: 50%;
+    left: 77%;
+    transform: translate(-50%, -50%);
+    display: none;
+    z-index: 1001;
+    width: 100%;
+}
+
+.reference-card {
+    max-width: 58vw;
+    max-height: 58vh;
+    object-fit: contain;
+    display: none;
+}

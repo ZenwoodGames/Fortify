@@ -1,5 +1,4 @@
 {OVERALL_GAME_HEADER}
-
 <div id="game_play_area">
     <!-- Player decks and reinforcement track -->
     <div id="player_area">
@@ -12,7 +11,8 @@
             <div id="tank_deck_fortified" class="unit_deck tank_deck"></div>
             <div id="chopper_deck" class="unit_deck chopper_deck"></div>
             <div id="artillery_deck_fortified" class="unit_deck artillery_deck"></div>
-        </div>
+            <div id="help-button">?</div>
+        </div>       
         <div id="action-counter"></div>
         <div id="board_container">
             <div class="action-menu">
@@ -55,5 +55,8 @@
 
     </div>
 </div>
-
+<div id="reference-cards">
+    <img id="reference-card-1" class="reference-card" src="" alt="Reference Card 1">
+    <img id="reference-card-2" class="reference-card" src="" alt="Reference Card 2">
+</div>
 {OVERALL_GAME_FOOTER}
