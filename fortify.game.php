@@ -992,6 +992,7 @@ class Fortify extends Table
             // New L-shape formations with center at corner
             [$centerUnit, $topUnit, $leftUnit],
             [$centerUnit, $topUnit, $rightUnit],
+            [$centerUnit, $topUnit, $topRightUnit],
             [$centerUnit, $bottomUnit, $leftUnit],
             [$centerUnit, $bottomUnit, $rightUnit],
             [$centerUnit, $leftUnit, $topLeftUnit],
