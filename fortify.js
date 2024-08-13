@@ -985,7 +985,7 @@ define([
             exitFortifyMode: function () {
                 this.fortifyMode = false;
                 dojo.removeClass('btnFortify', 'active');
-                this.showMessage(_("Fortify mode deactivated"), 'info');
+                //this.showMessage(_("Fortify mode deactivated"), 'info');
             },
 
             fortify: function (unitId) {
