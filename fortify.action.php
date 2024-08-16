@@ -127,4 +127,14 @@ class action_fortify extends APP_GameAction
 
     self::ajaxResponse();
   }
+
+
+  public function skipEnlist()
+  {
+    self::setAjaxMode();
+
+    $this->game->skipEnlist();
+
+    self::ajaxResponse();
+  }
 }

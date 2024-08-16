@@ -106,7 +106,6 @@ define([
 
                 // Add event listener for slots
                 dojo.query('.board-slot').connect('onclick', this, dojo.hitch(this, 'handleSlotClick'));
-                //dojo.connect($('btnMove'), 'onclick', this, 'startMoveAction');
                 dojo.connect($('btnFortify'), 'onclick', this, 'onFortifyButtonClick');
 
                 dojo.hitch(this, this.highlightValidMoves)();
@@ -123,7 +122,7 @@ define([
                     this.updateReinforcementTrack(gamedatas.reinforcementTrack);
 
                 // Add event listener for the attack button
-                dojo.connect($('btnAttack'), 'onclick', this, 'onAttackButtonClick');
+                //dojo.connect($('btnAttack'), 'onclick', this, 'onAttackButtonClick');
 
                 $('points_title').innerHTML = gamedatas.POINTS_TITLE;
                 this.setupPointsDisplay(gamedatas.players);
@@ -922,33 +921,25 @@ define([
                     });
                 }
             },
+
             restrictToInfantryEnlistment: function () {
-                // Disable all action buttons except for enlist
-                //dojo.query('.action-button').forEach(function (button) {
-                //    if (button.id !== 'btnEnlist') {
-                //        dojo.style(button, 'display', 'none');
-                //    }
-                //});
+                // Disable all action buttons except for enlist and skip
+                // dojo.query('.action-button').forEach(function (button) {
+                //     if (button.id !== 'btnSkipEnlist') {
+                //         dojo.style(button, 'display', 'none');
+                //     }
+                // });
+                // $('btnSkipEnlist').style('display', 'inline-block');
+                dojo.style($('btnSkipEnlist'), 'display', 'inline-block');
+                dojo.connect($('btnSkipEnlist'), 'onclick', this, 'skipEnlist');
 
-                // Highlight only infantry units in the player's supply
-                //dojo.query('.unit').removeClass('highlighted');
-                //dojo.query('.unit.infantry:not(.board-slot .unit)').addClass('highlighted');
-
-                // Disable selection of non-infantry units
+                // Enable selection of infantry units only
                 this.infantryOnlyMode = true;
             },
+
             onEnterPlayerFirstEnlist: function (args) {
                 this.gameState = 'firstEnlisting';
                 this.updateActionButtons('enlist');
-                //this.highlightValidFirstEnlistSpaces();
-            },
-
-            highlightValidFirstEnlistSpaces: function () {
-                // Highlight only shore spaces for the first enlistment
-                var shoreSpaces = document.querySelectorAll('.board-slot.shore');
-                shoreSpaces.forEach(space => {
-                    space.classList.add('highlighted');
-                });
             },
 
             isSlotOccupied: function (slot) {
@@ -958,12 +949,14 @@ define([
                 else
                     return false;
             },
+
             resetGameState: function () {
                 this.gameState = '';
                 this.selectedUnit = null;
                 this.removeAllHighlights();
                 this.updateActionButtons('');
             },
+
             onFortifyButtonClick: function (evt) {
                 if (!this.checkAction('fortify')) {
                     return;
@@ -1010,21 +1003,6 @@ define([
                 }
             },
 
-            startMoveAction: function (event) {
-
-                // Remove existing highlights
-                //this.removeAllHighlights();
-
-                // Highlight valid move locations
-                this.highlightValidMoves();
-
-                // Set the game state to 'moving'
-                this.gameState = 'moving';
-
-                // Update UI to show that we're in 'move' mode
-                this.updateActionButtons('move');
-            },
-
             onAttackButtonClick: function (evt) {
                 // This method is only reserved for chopper attack.
                 // Foritifed chopper must be sitting on top of another enemy unit to attack
@@ -1051,8 +1029,8 @@ define([
 
             exitAttackMode: function () {
                 this.attackMode = false;
-                dojo.removeClass('btnAttack', 'active');
-                this.showMessage(_("Attack mode deactivated"), 'info');
+                //dojo.removeClass('btnAttack', 'active');
+                //this.showMessage(_("Attack mode deactivated"), 'info');
             },
 
             highlightValidTargets: function (attackingUnit) {
@@ -1314,11 +1292,6 @@ define([
                         if (this.isUnitOnBoard(unit) && !unit.parentNode.querySelector('.unit.chopper')) {
                             unit.parentNode.classList.add('highlighted')
                         }
-                        //let battleshipSlot = battleship.closest('.board-slot');
-                        //let chopperOnBattleship = battleship ? battleship.querySelector('.unit.chopper') : null;
-                        //if (!chopperOnBattleship) {
-                        //    battleshipSlot ? battleshipSlot.classList.add('highlighted') : null;
-                        //}
                     });
 
                     // Highlight enemy units not occupied by choppers
@@ -1326,11 +1299,6 @@ define([
                         if (this.isUnitOnBoard(unit) && !unit.parentNode.querySelector('.unit.chopper')) {
                             unit.parentNode.classList.add('highlighted')
                         }
-                        //let battleshipSlot = battleship.closest('.board-slot');
-                        //let chopperOnBattleship = battleship ? battleship.querySelector('.unit.chopper') : null;
-                        //if (!chopperOnBattleship) {
-                        //    battleshipSlot ? battleshipSlot.classList.add('highlighted') : null;
-                        //}
                     });
                 }
                 else {
@@ -1503,7 +1471,7 @@ define([
                 this.addEventListenserForActionButtons(this.gamedatas.gamestate.possibleactions);
 
                 // Add event listener for the attack button
-                dojo.connect($('btnAttack'), 'onclick', this, 'onAttackButtonClick');
+                //dojo.connect($('btnAttack'), 'onclick', this, 'onAttackButtonClick');
             },
 
             resetPlayerDecks: function () {
@@ -1562,6 +1530,28 @@ define([
                 dojo.subscribe('newVolley', this, "notif_newVolley");
                 dojo.subscribe('updatePlayerPanel', this, "notif_updatePlayerPanel");
                 dojo.subscribe('pointsUpdated', this, "notif_pointsUpdated");
+                dojo.subscribe('enlistSkipped', this, "notif_enlistSkipped");
+            },
+
+            notif_enlistSkipped: function (notif) {
+                this.showMessage(_("${player_name} skipped the second infantry enlistment").replace('${player_name}', notif.args.player_name), 'info');
+                this.exitInfantryOnlyMode();
+            },
+
+            exitInfantryOnlyMode: function () {
+                this.infantryOnlyMode = false;
+                dojo.style($('btnSkipEnlist'), 'display', 'none');
+            },
+
+            skipEnlist: function () {
+                if (this.checkAction('skipEnlist')) {
+                    this.ajaxcall("/fortify/fortify/skipEnlist.html", {
+                        lock: true
+                    }, this, function (result) {
+                        // Success callback
+                        this.exitInfantryOnlyMode();
+                    });
+                }
             },
 
             notif_newVolley: function (notif) {
@@ -1616,6 +1606,7 @@ define([
             },
 
             notif_actionsRemaining: function (notif) {
+                debugger;
                 this.updateActionCounter(notif.args.actionsRemaining);
             },
 

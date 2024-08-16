@@ -219,34 +219,72 @@ class Fortify extends Table
     function stNextPlayer()
     {
         $this->serverLog("Entered stNextPlayer method", "");
+
         // Check for game end conditions
         if ($this->checkGameEnd()) {
             return; // The game has ended, no need to proceed
         }
 
-        // If the game hasn't ended, proceed with the next player's turn
-        $player_id = self::activeNextPlayer();
-        self::giveExtraTime($player_id);
+        $isFirstRound = $this->getGameStateValue('isFirstRound');
+        $isVeryFirstTurn = $this->getGameStateValue('isVeryFirstTurn');
+        $actionsRemaining = $this->getGameStateValue('actionsRemaining');
+
+        $this->serverLog("Current state", array(
+            "isFirstRound" => $isFirstRound,
+            "isVeryFirstTurn" => $isVeryFirstTurn,
+            "actionsRemaining" => $actionsRemaining
+        ));
+
+        // Move to the next player
+        $player_id = self::getActivePlayerId();
 
         // Reset the infantry enlistment count for the new active player
         $this->setInfantryEnlistCount($player_id, 0);
 
-        $isFirstRound = $this->getGameStateValue('isFirstRound');
-        $isVeryFirstTurn = $this->getGameStateValue('isVeryFirstTurn');
-
         if ($isFirstRound) {
             if ($isVeryFirstTurn) {
                 $this->setGameStateValue('isVeryFirstTurn', 0);
-                $this->setGameStateValue('actionsRemaining', 1);
+                $this->setGameStateValue('actionsRemaining', 2);
                 $this->gamestate->nextState('playerFirstEnlist');
             } else {
-                $this->setGameStateValue('actionsRemaining', 2);
-                $this->gamestate->nextState('playerFirstTurn');
+                // First turn is over.
+                $unitCount = $this->getUniqueValueFromDB("SELECT COUNT(*) FROM units");
+                $playerCount = count($this->loadPlayersBasicInfos());
+
+                if ($unitCount < $playerCount) {
+                    // Not all players have placed their first unit yet
+                    $this->setGameStateValue('actionsRemaining', 2);
+                    $this->gamestate->nextState('playerFirstTurn');
+                } else {
+                    // All players have placed their first unit, end first round
+                    $player_id = self::activeNextPlayer();
+                    self::giveExtraTime($player_id);
+
+                    $this->setGameStateValue('isFirstRound', 0);
+                    $this->setGameStateValue('actionsRemaining', 2);
+                    $this->gamestate->nextState('playerTurn');
+                }
             }
         } else {
-            $this->setGameStateValue('actionsRemaining', 2);
+            if ($actionsRemaining == 0) {
+                $this->serverLog("No actions are remaining", "");
+                $actionsRemaining = 2;
+                $this->setGameStateValue('actionsRemaining', $actionsRemaining);
+                $player_id = self::activeNextPlayer();
+                self::giveExtraTime($player_id);
+            }
+
             $this->gamestate->nextState('playerTurn');
         }
+
+        $this->serverLog("Notify clients about the updated action count", "");
+        $this->serverLog("actionsRemaining", $actionsRemaining);
+        // Notify clients about the updated action count
+        self::notifyAllPlayers('actionsRemaining', '', array(
+            'actionsRemaining' => $actionsRemaining
+        ));
+
+        $this->serverLog("Exited stNextPlayer method", "");
     }
 
 
@@ -268,7 +306,7 @@ class Fortify extends Table
     private function calculateAndUpdatePoints($playerId)
     {
         $this->serverLog("Inside calculateAndUpdatePoints method", "");
-        $this->serverLog("playerId", $playerId);
+        // $this->serverLog("playerId", $playerId);
 
         $points = 0;
 
@@ -278,7 +316,7 @@ class Fortify extends Table
                 WHERE player_id = $playerId AND is_fortified = 1 
                 GROUP BY type";
         $fortifiedUnitsOnBoard = self::getCollectionFromDb($sql);
-        $this->serverLog("fortifiedUnitsOnBoard", $fortifiedUnitsOnBoard);
+        // $this->serverLog("fortifiedUnitsOnBoard", $fortifiedUnitsOnBoard);
 
         // Points for fortified units in reinforcement track
         $sql = "SELECT type, COUNT(*) as count 
@@ -286,8 +324,8 @@ class Fortify extends Table
                 WHERE player_id = $playerId AND is_fortified = 1";
         $fortifiedUnitsInReinforcement = self::getCollectionFromDb($sql);
         // Debug logging
-        $this->serverLog("Fortified units on board:", $fortifiedUnitsOnBoard);
-        $this->serverLog("Fortified units in reinforcement:", $fortifiedUnitsInReinforcement);
+        // $this->serverLog("Fortified units on board:", $fortifiedUnitsOnBoard);
+        // $this->serverLog("Fortified units in reinforcement:", $fortifiedUnitsInReinforcement);
 
         // Combine the results safely
         $allFortifiedUnits = $fortifiedUnitsOnBoard;
@@ -321,19 +359,14 @@ class Fortify extends Table
         // Deduct points for units in Reinforcement Track
         $sql = "SELECT COUNT(*) as count FROM reinforcement_track WHERE player_id = $playerId";
         $reinforcementUnits = self::getUniqueValueFromDB($sql);
-        $this->serverLog("reinforcementUnits", $reinforcementUnits);
-        $this->serverLog("points", $points);
+        // $this->serverLog("reinforcementUnits", $reinforcementUnits);
+        // $this->serverLog("points", $points);
         $points -= 2 * $reinforcementUnits;
 
         // Add 7 points if player won by 2x2 Fortification
         if ($this->check2x2Fortification($playerId)) {
             $points += 7;
         }
-
-        // Update player's points
-        //$this->playerPoints[$playerId] = $points;
-        // $pointsLabel = $playerId == 1 ? "player1Points" : "player2Points";
-        // $this->setGameStateValue($pointsLabel, $points);
 
         // Update player's points
         $this->setPlayerPoints($playerId, $points);
@@ -351,13 +384,8 @@ class Fortify extends Table
         self::DbQuery($sql);
     }
 
-    private function getPlayerPoints($player_id)
+    private function getGameVariant()
     {
-        $sql = "SELECT player_score FROM player WHERE player_id = $player_id";
-        return self::getUniqueValueFromDB($sql);
-    }
-
-    private function getGameVariant(){
         return self::getGameStateValue('gameVariant');
     }
 
@@ -531,22 +559,29 @@ class Fortify extends Table
                 } else {
                     // If it's the very first turn or we've used all actions, move to next player
                     $this->serverLog("If it's the very first turn or we've used all actions, move to next player", "");
+                    $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
+                    $this->setGameStateValue('actionsRemaining', $actionsRemaining);
                     $this->setGameStateValue('isVeryFirstTurn', 0);
                     $this->gamestate->nextState('nextPlayer');
                 }
             } else {
+                // Either this is second player's first turn or
                 // Otherwise, go to regular first round turn
                 $this->serverLog("Otherwise, go to regular first round turn", "");
-
-                $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
-                $this->setGameStateValue('actionsRemaining', $actionsRemaining);
-                $this->gamestate->nextState('playerFirstTurn');
+                if ($infantryEnlistCount == 1) {
+                    $this->serverLog("First infantry enlisted", "");
+                } else {
+                    $this->serverLog("Enlist is done or skipped", "");
+                    $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
+                    $this->setGameStateValue('actionsRemaining', $actionsRemaining);
+                    $this->gamestate->nextState('nextPlayer');
+                }
             }
             if ($infantryEnlistCount != 1) {
                 // Check if all players have placed their first unit
 
                 $this->serverLog("Check if all players have placed their first unit", "");
-                
+
                 $sql = "SELECT COUNT(*) FROM units";
                 $unitCount = self::getUniqueValueFromDB($sql);
 
@@ -558,6 +593,7 @@ class Fortify extends Table
                     $this->serverLog("If all players have placed their first unit, end first round", "");
 
                     $this->setGameStateValue('isFirstRound', 0);
+                    $this->gamestate->nextState('nextPlayer');
                 }
             }
         } else {
@@ -582,16 +618,23 @@ class Fortify extends Table
                 } else {
                     $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
                     $this->setGameStateValue('actionsRemaining', $actionsRemaining);
+
                     if ($actionsRemaining == 0) {
-                        $actionsRemaining = 2;
-                        $this->setGameStateValue('actionsRemaining', $actionsRemaining);
+                        //$actionsRemaining = 2;
+                        //$this->setGameStateValue('actionsRemaining', $actionsRemaining);
+                        // Notify clients about the updated action count
+
                         $this->gamestate->nextState('nextPlayer');
+                    } else if ($actionsRemaining == 1) {
+                        self::notifyAllPlayers('actionsRemaining', '', array(
+                            'actionsRemaining' => $actionsRemaining
+                        ));
                     }
                 }
                 // Notify clients about the updated action count
-                self::notifyAllPlayers('actionsRemaining', '', array(
-                    'actionsRemaining' => $actionsRemaining
-                ));
+                // self::notifyAllPlayers('actionsRemaining', '', array(
+                //     'actionsRemaining' => $actionsRemaining
+                // ));
             }
         }
 
@@ -1139,12 +1182,6 @@ class Fortify extends Table
         $this->serverLog("No valid formation found", null);
         return null;
     }
-    // private function getAdjacentUnits($unit)
-    // {
-    //     $sql = "SELECT unit_id, x, y, type, player_id, is_fortified FROM units 
-    //             WHERE (ABS(x - {$unit['x']}) + ABS(y - {$unit['y']}) = 1)";
-    //     return self::getCollectionFromDb($sql);
-    // }
 
     private function checkTankFormation($centerUnit, $adjacentUnits)
     {
@@ -1213,11 +1250,6 @@ class Fortify extends Table
         return null;
     }
 
-    private function isAdjacent($unit1, $unit2)
-    {
-        return abs($unit1['x'] - $unit2['x']) + abs($unit1['y'] - $unit2['y']) == 1;
-    }
-
     private function getAdjacentUnits($unit)
     {
         $sql = "SELECT unit_id, x, y, type, player_id, is_fortified FROM units 
@@ -1229,6 +1261,47 @@ class Fortify extends Table
         $this->serverLog("getAdjacentUnits SQL", $sql);
         $this->serverLog("getAdjacentUnits result", $result);
         return $result;
+    }
+
+    public function skipEnlist()
+    {
+        $this->serverLog("Entered skipEnlist method", "");
+        // Check if it's a valid action
+        if (!$this->checkAction('skipEnlist')) {
+            throw new BgaUserException(self::_("It is not your turn or this action is not allowed at this time"));
+        }
+
+        $player_id = self::getActivePlayerId();
+
+        // Reset the infantry enlist count
+        $this->setInfantryEnlistCount($player_id, 0);
+
+        // Decrease the action counter
+        $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
+
+        $this->serverLog("actionsRemaining", $actionsRemaining);
+
+        $this->setGameStateValue('actionsRemaining', $actionsRemaining);
+
+        // Notify all players about the skipped enlistment
+        self::notifyAllPlayers('enlistSkipped', clienttranslate('${player_name} skipped the second infantry enlistment'), [
+            'player_id' => $player_id,
+            'player_name' => self::getActivePlayerName()
+        ]);
+
+        // Check if the turn should end
+        if ($actionsRemaining == 0) {
+            self::setGameStateValue('isFirstRound', 0);
+            self::setGameStateValue('isVeryFirstTurn', 0);
+            $this->serverLog("Turn will end", "");
+            $this->gamestate->nextState('nextPlayer');
+        } else {
+            // Update the UI about remaining actions
+            self::notifyAllPlayers('actionsRemaining', '', [
+                'actionsRemaining' => $actionsRemaining
+            ]);
+            $this->gamestate->nextState('stayInState');
+        }
     }
 
 
@@ -1606,24 +1679,23 @@ class Fortify extends Table
     {
         $this->serverLog("Entered checkAllUnitsFortified method", "");
 
-        if($this->getGameVariant() == 1 || $this->getGameVariant() == 2 || $this->getGameVariant() == 4){
+        if ($this->getGameVariant() == 1 || $this->getGameVariant() == 2 || $this->getGameVariant() == 4) {
             $totalUnits = 12;
-        }
-        else{
+        } else {
             $totalUnits = 14;
         }
 
-        $this->serverLog("totalUnits", $totalUnits);
+        // $this->serverLog("totalUnits", $totalUnits);
 
         $sql = "SELECT COUNT(*) as count FROM units WHERE player_id = $playerId AND is_fortified = 1";
         $fortifiedUnits = self::getUniqueValueFromDB($sql);
 
-        $this->serverLog("fortifiedUnits", $fortifiedUnits);
+        // $this->serverLog("fortifiedUnits", $fortifiedUnits);
 
         $sql = "SELECT COUNT(*) as count FROM reinforcement_track WHERE player_id = $playerId AND is_fortified = 1";
         $reinforcementfortifiedUnits = self::getUniqueValueFromDB($sql);
 
-        $this->serverLog("reinforcementfortifiedUnits", $reinforcementfortifiedUnits);
+        // $this->serverLog("reinforcementfortifiedUnits", $reinforcementfortifiedUnits);
 
         return $totalUnits == $fortifiedUnits + $reinforcementfortifiedUnits;
     }
