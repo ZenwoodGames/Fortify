@@ -481,6 +481,8 @@ class Fortify extends Table
         $this->serverLog("unitType", $unitType);
         $this->serverLog("gamestate", $this->gamestate);
 
+        $infantryEnlistCount = $this->getInfantryEnlistCount($player_id);
+
         if ($unitType == 'chopper' && self::getGameStateValue('gameVariant') == 3) {
             // Check if the chopper is being enlisted on top of a friendly battleship
             $sql = "SELECT * FROM units WHERE x = $x AND y = $y AND type = 'battleship' AND player_id = $player_id";
@@ -530,11 +532,8 @@ class Fortify extends Table
             $players = self::loadPlayersBasicInfos();
             $player_color = $players[$player_id]['player_color'];
 
-            // If unit type is infantry, one more infantry unit can be enlisted for free
-            // 
+            // If unit type is infantry, one more infantry unit can be enlisted for free 
             if ($unitType == 'infantry') {
-                $infantryEnlistCount = $this->getInfantryEnlistCount($player_id);
-
                 if ($infantryEnlistCount == 0) {
                     // This is the first infantry enlistment
                     $this->setInfantryEnlistCount($player_id, 1);
