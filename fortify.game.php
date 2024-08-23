@@ -211,9 +211,32 @@ class Fortify extends Table
     */
     function getGameProgression()
     {
-        // TODO: compute and return the game progression
+        // Get the current volley count
+        $volleyCount = $this->getVolleyCount();
 
-        return 0;
+        // Get the total number of units per player
+        $totalUnits = (self::getGameStateValue('gameVariant') == 3) ? 14 : 12;
+        $player_id = self::getActivePlayerId();
+
+        // Calculate the progress of the current volley
+        $player1FortifiedUnits = $this->getPlayerFortifiedUnitsCount($player_id);
+        $player2FortifiedUnits = $this->getPlayerFortifiedUnitsCount(self::getPlayerAfter($player_id));
+
+        $currentVolleyProgress = (($player1FortifiedUnits + $player2FortifiedUnits) / (2 * $totalUnits)) * 100;
+
+        // Calculate the overall game progress
+        $overallProgress = (($volleyCount - 1) * 100 + $currentVolleyProgress) / 3;
+
+        // Ensure the progress doesn't exceed 100%
+        return min(100, max(0, $overallProgress));
+    }
+
+    // Helper function to get the count of fortified units for a player
+    private function getPlayerFortifiedUnitsCount($playerId)
+    {
+        $fortifiedOnBoard = self::getUniqueValueFromDB("SELECT COUNT(*) FROM units WHERE player_id = $playerId AND is_fortified = 1");
+        $fortifiedInReinforcement = self::getUniqueValueFromDB("SELECT COUNT(*) FROM reinforcement_track WHERE player_id = $playerId AND is_fortified = 1");
+        return $fortifiedOnBoard + $fortifiedInReinforcement;
     }
 
     function stNextPlayer()
