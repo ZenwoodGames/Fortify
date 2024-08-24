@@ -178,7 +178,7 @@
 }
 
 .unit.fortified {
-    filter: drop-shadow(-3px -3px 6px gold) drop-shadow(4px 4px 2px #222);
+    filter: drop-shadow(-3px 1px 6px gold) drop-shadow(4px 4px 2px #222);
 }
 
 .unit.highlight-target {
