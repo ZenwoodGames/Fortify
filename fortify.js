@@ -122,7 +122,7 @@ define([
                     this.updateReinforcementTrack(gamedatas.reinforcementTrack);
 
                 // Add event listener for the attack button
-                //dojo.connect($('btnAttack'), 'onclick', this, 'onAttackButtonClick');
+                dojo.connect($('btnAttack'), 'onclick', this, 'onAttackButtonClick');
 
                 $('points_title').innerHTML = gamedatas.POINTS_TITLE;
                 this.setupPointsDisplay(gamedatas.players);
@@ -335,7 +335,9 @@ define([
                                 //this.highlightFriendlyBattleships();
                                 this.selectedSpecialUnit = event.target;
                             }
-                            if (this.selectedSpecialUnit && this.selectedSpecialUnit.parentNode.children.length > 1) {
+                            debugger;
+                            if (this.selectedSpecialUnit && this.selectedSpecialUnit.parentNode.children.length > 1
+                               && !this.selectedSpecialUnit.previousElementSibling.classList.contains(this.playerColor)) {
                                 dojo.style($('btnAttack'), 'display', 'block');
                             }
                             else {
@@ -434,7 +436,7 @@ define([
                     /////////////////////////////////////////////////////////////////////////////////////////
 
                     if (this.isSlotOccupied(slot)) {
-                        if (this.selectedUnit && event.target != this.selectedUnit) {
+                        if (this.selectedUnit && event.target != this.selectedUnit && event.target.classList.contains('highlight-target')) {
                             if (this.selectedSpecialUnit) {
                                 var unitId = this.selectedSpecialUnit.id;
                                 var toX = parseInt(event.currentTarget.dataset.x);
@@ -707,14 +709,14 @@ define([
             // Add this new function to highlight friendly battleships
             highlightFriendlyBattleships: function () {
                 debugger;
-                var friendlyBattleships = dojo.query('.board-slot > .battleship.' + this.playerColor);
+                var friendlyBattleships = dojo.query('.board-slot:not(:has(.chopper)) > .battleship.' + this.playerColor);
                 if (friendlyBattleships && friendlyBattleships.length > 0) {
                     friendlyBattleships.forEach(function (battleship) {
                         dojo.addClass(battleship.parentNode, 'highlighted');
                     });
                 }
                 else {
-                    this.showMessage(_("No friendly battleship available to enlist."), 'info');
+                    this.showMessage(_("No friendly battleship available."), 'info');
                 }
             },
 
@@ -1624,7 +1626,7 @@ define([
                 } else {
                     // Reset to normal mode
                     this.infantryOnlyMode = false;
-                    //dojo.query('.action-button').style('display', 'inline-block');
+                    dojo.style($('btnSkipEnlist'), 'display', 'none');
                 }
 
                 // Create or move the unit on the board

@@ -18,7 +18,7 @@
             <div class="action-menu">
                 <!--<button class="action-button" id="btnMove">MOVE</button>-->
                 <button class="action-button" id="btnFortify">FORTIFY</button>
-                <!--<button class="action-button" id="btnAttack" style="display: none;">ATTACK</button>-->
+                <button class="action-button" id="btnAttack" style="display: none;">ATTACK BOTTOM UNIT</button>
                 <button class="action-button" id="btnSkipEnlist" style="display: none;">SKIP ENLIST</button>
             </div>
             <div id="points_display" class="whiteblock">
