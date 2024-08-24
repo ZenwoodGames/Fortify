@@ -267,16 +267,21 @@ class Fortify extends Table
         if ($isFirstRound) {
             if ($isVeryFirstTurn) {
                 $this->setGameStateValue('isVeryFirstTurn', 0);
-                $this->setGameStateValue('actionsRemaining', 2);
+                $actionsRemaining = 2;
+                $this->setGameStateValue('actionsRemaining', $actionsRemaining);
                 $this->gamestate->nextState('playerFirstEnlist');
             } else {
                 // First turn is over.
                 $unitCount = $this->getUniqueValueFromDB("SELECT COUNT(*) FROM units");
                 $playerCount = count($this->loadPlayersBasicInfos());
 
-                if ($unitCount < $playerCount) {
+                self::serverLog("Infantry Enlist Count", self::getInfantryEnlistCount($player_id));
+
+                if (self::getInfantryEnlistCount($player_id)) {
                     // Not all players have placed their first unit yet
-                    $this->setGameStateValue('actionsRemaining', 2);
+                    
+                    $actionsRemaining = 2;
+                    $this->setGameStateValue('actionsRemaining', $actionsRemaining);
                     $this->gamestate->nextState('playerFirstTurn');
                 } else {
                     // All players have placed their first unit, end first round
@@ -284,7 +289,8 @@ class Fortify extends Table
                     self::giveExtraTime($player_id);
 
                     $this->setGameStateValue('isFirstRound', 0);
-                    $this->setGameStateValue('actionsRemaining', 2);
+                    $actionsRemaining = 2;
+                    $this->setGameStateValue('actionsRemaining', $actionsRemaining);
                     $this->gamestate->nextState('playerTurn');
                 }
             }
