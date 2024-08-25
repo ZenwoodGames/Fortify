@@ -657,6 +657,14 @@ define([
             
             */
 
+            showButton: function(buttonId){
+                dojo.style($(buttonId), 'display', 'inline-block');
+            },
+
+            hideButton: function(buttonId){
+                dojo.style($(buttonId), 'display', 'none');
+            },
+
             updateActionCounter: function (actionsRemaining) {
                 // Update the UI to show the number of actions remaining
                 var actionCounterElement = $('action-counter');
@@ -925,14 +933,8 @@ define([
             },
 
             restrictToInfantryEnlistment: function () {
-                // Disable all action buttons except for enlist and skip
-                // dojo.query('.action-button').forEach(function (button) {
-                //     if (button.id !== 'btnSkipEnlist') {
-                //         dojo.style(button, 'display', 'none');
-                //     }
-                // });
-                // $('btnSkipEnlist').style('display', 'inline-block');
-                dojo.style($('btnSkipEnlist'), 'display', 'inline-block');
+               this.showButton('btnSkipEnlist');
+                // dojo.style($('btnSkipEnlist'), 'display', 'inline-block');
                 dojo.connect($('btnSkipEnlist'), 'onclick', this, 'skipEnlist');
 
                 // Enable selection of infantry units only
@@ -1626,7 +1628,9 @@ define([
                 } else {
                     // Reset to normal mode
                     this.infantryOnlyMode = false;
-                    dojo.style($('btnSkipEnlist'), 'display', 'none');
+                    this.showButton('btnFortify');
+                    this.hideButton('btnSkipEnlist');
+                    // dojo.style($('btnSkipEnlist'), 'display', 'none');
                 }
 
                 // Create or move the unit on the board
