@@ -129,6 +129,16 @@ define([
 
                 this.setupHelpButton();
 
+                // Show skip enlist button
+                debugger;
+                if(gamedatas.players[this.player_id].infantryEnlistCount == 1){
+                    this.showButton('btnSkipEnlist');
+                }
+                else{
+                    this.hideButton('btnSkipEnlist');
+                }
+                dojo.connect($('btnSkipEnlist'), 'onclick', this, 'skipEnlist');
+
                 console.log("Ending game setup");
             },
 
@@ -337,7 +347,7 @@ define([
                             }
                             debugger;
                             if (this.selectedSpecialUnit && this.selectedSpecialUnit.parentNode.children.length > 1
-                               && !this.selectedSpecialUnit.previousElementSibling.classList.contains(this.playerColor)) {
+                                && !this.selectedSpecialUnit.previousElementSibling.classList.contains(this.playerColor)) {
                                 dojo.style($('btnAttack'), 'display', 'block');
                             }
                             else {
@@ -657,11 +667,11 @@ define([
             
             */
 
-            showButton: function(buttonId){
+            showButton: function (buttonId) {
                 dojo.style($(buttonId), 'display', 'inline-block');
             },
 
-            hideButton: function(buttonId){
+            hideButton: function (buttonId) {
                 dojo.style($(buttonId), 'display', 'none');
             },
 
@@ -933,7 +943,8 @@ define([
             },
 
             restrictToInfantryEnlistment: function () {
-               this.showButton('btnSkipEnlist');
+                this.hideButton('btnFortify');
+                this.showButton('btnSkipEnlist');
                 // dojo.style($('btnSkipEnlist'), 'display', 'inline-block');
                 dojo.connect($('btnSkipEnlist'), 'onclick', this, 'skipEnlist');
 
@@ -1544,7 +1555,8 @@ define([
 
             exitInfantryOnlyMode: function () {
                 this.infantryOnlyMode = false;
-                dojo.style($('btnSkipEnlist'), 'display', 'none');
+                this.hideButton('btnSkipEnlist');
+                this.showButton('btnFortify');
             },
 
             skipEnlist: function () {

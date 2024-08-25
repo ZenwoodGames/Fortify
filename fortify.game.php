@@ -120,7 +120,8 @@ class Fortify extends Table
 
         self::reloadPlayersBasicInfos();
         // Get players & their data
-        $sql = "SELECT player_id id, player_name name, player_score score FROM player";
+        $sql = "SELECT player_id id, player_name name, player_score score, 
+                infantry_enlist_count infantryEnlistCount FROM player";
         $result['players'] = self::getCollectionFromDb($sql);
 
         $this->serverLog("players", $result['players']);
@@ -845,9 +846,13 @@ class Fortify extends Table
 
     function fortify($unitId)
     {
+        self::serverLog("Inside Fortify method", "");
         self::checkAction('fortify');
 
         $player_id = self::getActivePlayerId();
+
+        $infantryEnlistCount = $this->getInfantryEnlistCount($player_id);
+        self::serverLog("infantryEnlistCount", $infantryEnlistCount);
 
         // Fetch the selected unit from the database
         $sql = "SELECT unit_id, x, y, type, player_id, is_fortified FROM units WHERE unit_id = " . self::escapeString($unitId);
@@ -894,11 +899,19 @@ class Fortify extends Table
 
         // If infantry enlist was previous move, cancel the free infantry enlist
         // And decrease the actionremaining counter by 1
-        $infantryEnlistCount = $this->getInfantryEnlistCount($player_id);
+        
         if ($infantryEnlistCount == 1) {
-            $this->setInfantryEnlistCount($player_id, 0);
-            $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
-            $this->setGameStateValue('actionsRemaining', $actionsRemaining);
+            $actionsRemaining = $this->getGameStateValue('actionsRemaining');
+            self::serverLog("actions remaining", $actionsRemaining);
+
+            if($actionsRemaining == 2){
+                $this->setInfantryEnlistCount($player_id, 0);
+                $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
+                $this->setGameStateValue('actionsRemaining', $actionsRemaining);
+            }
+            else{
+                throw new BgaUserException("This action is not allowed!");
+            }
         }
 
         if ($unit['type'] == 'artillery') {
