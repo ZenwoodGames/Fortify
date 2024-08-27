@@ -1081,7 +1081,7 @@ define([
                 var allUnits = this.getAllUnitsOnBoard();
 
                 allUnits.forEach(unit => {
-                    if (artilleryUnit.is_fortified && unit.player_id != this.player_id) {
+                    if (unit.player_id != this.player_id) {
                         // Check if the unit is in the same row or column as the artillery
                         if (unit.x === artilleryUnit.x || unit.y === artilleryUnit.y) {
                             // Check fortification rules
@@ -1089,6 +1089,7 @@ define([
                                 this.highlightUnit(unit.unit_id);
                             }
                         }
+
                     }
                 });
             },
