@@ -948,9 +948,16 @@ define([
                             this.showMessage(_("You can enlist another infantry unit for free"), 'info');
                             this.restrictToInfantryEnlistment();
                         }
+                        this.exitFortifyMode();
                     }, function (is_error) {
+                        if (is_error) {
+                            this.removeSlotHighlight();
+                            this.removeUnitHighlight();
+                            this.selectedUnit = null;
+                            this.selectedSpecialUnit = null;
 
-                        // What to do after the server call in any case
+                            this.exitFortifyMode();
+                        }
                     });
                 }
             },
