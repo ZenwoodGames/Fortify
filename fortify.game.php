@@ -1124,7 +1124,7 @@ class Fortify extends Table
 
     private function getNearbyBattleships($centerUnit)
     {
-        $sql = "SELECT unit_id, x, y, type, is_fortified FROM units 
+        $sql = "SELECT unit_id, x, y, type, is_fortified, in_formation FROM units 
         WHERE player_id = " . self::escapeString($centerUnit['player_id']) . "
         AND type = 'battleship'";
         $result = self::getObjectListFromDB($sql);
@@ -1834,8 +1834,9 @@ class Fortify extends Table
 
     private function getBoard()
     {
-        $sql = "SELECT unit_id, type, player_id, x, y, is_fortified FROM units";
-        $result = self::getObjectListFromDB($sql);
+        self::serverLog("Inside getBoard method", "");
+
+        $result = self::getAllUnits();
 
         $board = array();
         foreach ($result as $unit) {
