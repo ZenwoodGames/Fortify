@@ -233,6 +233,10 @@ define([
                     return;
                 }
 
+                if(event.target.nextSibling && event.target.nextSibling.classList.contains("chopper")){
+                    return;
+                }
+
                 if (this.infantryOnlyMode && !event.target.classList.contains('infantry')) {
                     this.showMessage(_("You must select an infantry unit"), 'error');
                     return;
