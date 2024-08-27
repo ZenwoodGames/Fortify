@@ -751,40 +751,40 @@ define([
                 }
             },
 
-            highlightValidUnitsForFortification() {
-                // Remove existing highlights
-                dojo.query('.unit.highlight-fortify').removeClass('highlight-fortify');
+            // highlightValidUnitsForFortification() {
+            //     // Remove existing highlights
+            //     dojo.query('.unit.highlight-fortify').removeClass('highlight-fortify');
 
-                // Highlight valid units for fortification
-                dojo.query('.unit.' + this.player_color).forEach(unit => {
-                    debugger;
-                    if (this.isValidForFortification(unit)) {
-                        dojo.addClass(unit, 'highlight-fortify');
-                    }
-                });
-            },
+            //     // Highlight valid units for fortification
+            //     dojo.query('.unit.' + this.player_color).forEach(unit => {
+            //         debugger;
+            //         if (this.isValidForFortification(unit)) {
+            //             dojo.addClass(unit, 'highlight-fortify');
+            //         }
+            //     });
+            // },
 
-            isValidForFortification(unit) {
-                debugger;
-                if (dojo.hasClass(unit, 'chopper')) {
-                    // Special rule for Choppers
-                    var chopperSpace = unit.parentNode;
-                    var x = parseInt(chopperSpace.dataset.x);
-                    var y = parseInt(chopperSpace.dataset.y);
+            // isValidForFortification(unit) {
+            //     debugger;
+            //     if (dojo.hasClass(unit, 'chopper')) {
+            //         // Special rule for Choppers
+            //         var chopperSpace = unit.parentNode;
+            //         var x = parseInt(chopperSpace.dataset.x);
+            //         var y = parseInt(chopperSpace.dataset.y);
 
-                    // Check the space below for a friendly fortified battleship
-                    var spaceBelow = dojo.query('.board-slot[data-x="' + x + '"][data-y="' + (y + 1) + '"]')[0];
-                    if (spaceBelow) {
-                        var battleshipBelow = dojo.query('.unit.battleship.' + this.player_color + '.fortified', spaceBelow)[0];
-                        return !!battleshipBelow;
-                    }
-                    return false;
-                } else {
-                    // For other unit types, use existing logic (assuming it's implemented)
-                    // This might involve checking for valid formations
-                    return this.checkValidFormation(unit);
-                }
-            },
+            //         // Check the space below for a friendly fortified battleship
+            //         var spaceBelow = dojo.query('.board-slot[data-x="' + x + '"][data-y="' + (y + 1) + '"]')[0];
+            //         if (spaceBelow) {
+            //             var battleshipBelow = dojo.query('.unit.battleship.' + this.player_color + '.fortified', spaceBelow)[0];
+            //             return !!battleshipBelow;
+            //         }
+            //         return false;
+            //     } else {
+            //         // For other unit types, use existing logic (assuming it's implemented)
+            //         // This might involve checking for valid formations
+            //         return this.checkValidFormation(unit);
+            //     }
+            // },
 
             divYou: function () {
                 var color = this.gamedatas.players[this.player_id].color;
@@ -1001,10 +1001,11 @@ define([
                     this.fortifyMode = true;
                     dojo.addClass('btnFortify', 'active');
                     this.showMessage(_("Select a unit to fortify"), 'info');
-                    this.highlightValidUnitsForFortification();
+                    //this.highlightValidUnitsForFortification();
 
                     this.removeSlotHighlight();
                     this.clearHighlights();
+                    this.highlightUnitInFormation();
                 } else {
                     this.exitFortifyMode();
                 }
@@ -1013,7 +1014,7 @@ define([
             exitFortifyMode: function () {
                 this.fortifyMode = false;
                 dojo.removeClass('btnFortify', 'active');
-                //this.showMessage(_("Fortify mode deactivated"), 'info');
+                this.deselectUnitInFormation();
             },
 
             fortify: function (unitId) {
@@ -1115,6 +1116,30 @@ define([
                             }
                         }
                     }
+                });
+            },
+
+            highlightUnitInFormation(){
+                let units = this.getAllUnitsOnBoard();
+
+                units.forEach(unit => {
+                    debugger;
+                    let inFormation = parseInt(unit.is_in_formation)
+
+                    if(inFormation && !unit.is_fortified && unit.player_id == this.player_id)
+                        $(unit.unit_id).classList.add('formation');
+                });
+            },
+
+            deselectUnitInFormation(){
+                let units = this.getAllUnitsOnBoard();
+
+                units.forEach(unit => {
+                    debugger;
+                    let inFormation = parseInt(unit.is_in_formation)
+
+                    if(inFormation && !unit.is_fortified && unit.player_id == this.player_id)
+                        $(unit.unit_id).classList.remove('formation');
                 });
             },
 
