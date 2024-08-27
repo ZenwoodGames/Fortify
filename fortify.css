@@ -182,7 +182,7 @@
 }
 
 .unit.highlight-target {
-    box-shadow: 0 0 10px 5px red;
+    box-shadow: 0 0 9px 2px red;
     cursor: pointer;
     /* border: black; */
     border-radius: 32px;
