@@ -114,7 +114,7 @@ define([
 
                 for (var i in gamedatas.units) {
                     var unit = gamedatas.units[i];
-                    this.placeUnitOnBoard(unit.unit_id, unit.type, unit.x, unit.y, unit.player_id, unit.is_fortified);
+                    this.placeUnitOnBoard(unit.unit_id, unit.type, unit.x, unit.y, unit.player_id, unit.is_fortified, unit.in_formation);
                 }
 
                 // Initialize the reinforcement track
@@ -142,7 +142,7 @@ define([
                 console.log("Ending game setup");
             },
 
-            placeUnitOnBoard: function (unitId, unitType, x, y, playerId, is_fortified) {
+            placeUnitOnBoard: function (unitId, unitType, x, y, playerId, is_fortified, in_formation) {
                 var unitDiv = $(unitId);
                 if (!unitDiv) {
                     // If the unit doesn't exist (e.g., after a refresh), create it
@@ -183,6 +183,9 @@ define([
                         }
                         dojo.place(unitDiv, playerDeck);
                     }
+                }
+                if(in_formation){
+                    unitDiv.setAttribute("data-in-formation", in_formation);
                 }
             },
 
@@ -712,7 +715,8 @@ define([
                     y: parseInt(unitElement.parentNode.dataset.y),
                     type: this.getUnitType(unitElement),
                     player_id: this.getUnitPlayerId(unitElement),
-                    is_fortified: unitElement.classList.contains('fortified')
+                    is_fortified: unitElement.classList.contains('fortified'),
+                    is_in_formation: parseInt(unitElement.dataset.inFormation)
                 };
             },
 
@@ -1080,9 +1084,15 @@ define([
                 adjacentUnits.forEach(unit => {
                     if (unit.player_id != this.player_id) {
                         // Check if the attacking unit is fortified or in formation
-                        if (attackingUnit.is_fortified) {
-                            // If the defending unit is fortified, only highlight if the attacking unit is also fortified
-                            if (!unit.is_fortified || (unit.is_fortified && attackingUnit.is_fortified)) {
+                        if (unit.is_fortified) {
+                            if (attackingUnit.is_fortified) {
+                                // If the defending unit is fortified, only highlight if the attacking unit is also fortified
+                                this.highlightUnit(unit.unit_id);
+                            }
+                        }
+                        else{
+                            // If attacking unit is in formation and defending unit is not fortified, highlight the target
+                            if(attackingUnit.is_in_formation || attackingUnit.is_fortified){
                                 this.highlightUnit(unit.unit_id);
                             }
                         }
@@ -1546,6 +1556,15 @@ define([
                 dojo.subscribe('updatePlayerPanel', this, "notif_updatePlayerPanel");
                 dojo.subscribe('pointsUpdated', this, "notif_pointsUpdated");
                 dojo.subscribe('enlistSkipped', this, "notif_enlistSkipped");
+                dojo.subscribe('updateUnit', this, "notif_updateUnit");
+            },
+
+            notif_updateUnit: function(notif){
+                debugger;
+                let unit_id = notif.args.unit_id;
+                let is_in_formation = notif.args.is_in_formation;
+
+                $(unit_id).setAttribute("data-in-formation", is_in_formation);
             },
 
             notif_enlistSkipped: function (notif) {
