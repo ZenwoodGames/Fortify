@@ -1099,7 +1099,8 @@ define([
 
                 adjacentUnits.forEach(unit => {
                     debugger;
-                    if (unit.player_id != this.player_id) {
+                    if (unit.player_id != this.player_id && unit.type != "artillery") {
+                        // Artillery units can never be attacked by any unit
                         // Check if the attacking unit is fortified or in formation
                         if (unit.is_fortified) {
                             if (attackingUnit.is_fortified) {
