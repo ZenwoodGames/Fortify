@@ -587,17 +587,6 @@ class Fortify extends Table
             $notificationData['infantryEnlistCount'] = $infantryEnlistCount;
         }
 
-        // Check and update if unit is in formation
-        // if (self::isUnitInFormation(self::getUnitDetails($unitId))) {
-        //     $sql = "UPDATE units SET in_formation = 1 WHERE unit_id = " . self::escapeString($unitId);
-        //     self::DbQuery($sql);
-        //     $notificationData['unitInFormation'] = 1;
-        // } else {
-        //     $sql = "UPDATE units SET in_formation = 0 WHERE unit_id = " . self::escapeString($unitId);
-        //     self::DbQuery($sql);
-        //     $notificationData['unitInFormation'] = 0;
-        // }
-
         // Notify all players about the new unit
         self::notifyAllPlayers(
             'unitEnlisted',
