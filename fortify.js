@@ -133,9 +133,13 @@ define([
                 debugger;
                 if(gamedatas.players[this.player_id].infantryEnlistCount == 1){
                     this.showButton('btnSkipEnlist');
+                    this.hideButton('btnFortify');
+                    this.infantryOnlyMode = true;
                 }
                 else{
                     this.hideButton('btnSkipEnlist');
+                    this.showButton('btnFortify');
+                    this.infantryOnlyMode = false;
                 }
                 dojo.connect($('btnSkipEnlist'), 'onclick', this, 'skipEnlist');
 
@@ -1078,7 +1082,6 @@ define([
             },
 
             highlightAdjacentTargets: function (attackingUnit) {
-                debugger;
                 var adjacentUnits = this.getAdjacentUnits(attackingUnit, true);
 
                 adjacentUnits.forEach(unit => {
