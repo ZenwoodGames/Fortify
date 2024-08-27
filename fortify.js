@@ -131,12 +131,12 @@ define([
 
                 // Show skip enlist button
                 debugger;
-                if(gamedatas.players[this.player_id].infantryEnlistCount == 1){
+                if (gamedatas.players[this.player_id].infantryEnlistCount == 1) {
                     this.showButton('btnSkipEnlist');
                     this.hideButton('btnFortify');
                     this.infantryOnlyMode = true;
                 }
-                else{
+                else {
                     this.hideButton('btnSkipEnlist');
                     this.showButton('btnFortify');
                     this.infantryOnlyMode = false;
@@ -188,7 +188,7 @@ define([
                         dojo.place(unitDiv, playerDeck);
                     }
                 }
-                if(in_formation){
+                if (in_formation) {
                     unitDiv.setAttribute("data-in-formation", in_formation);
                 }
             },
@@ -233,7 +233,7 @@ define([
                     return;
                 }
 
-                if(event.target.nextSibling && event.target.nextSibling.classList.contains("chopper")){
+                if (event.target.nextSibling && event.target.nextSibling.classList.contains("chopper")) {
                     return;
                 }
 
@@ -1099,9 +1099,9 @@ define([
                                 this.highlightUnit(unit.unit_id);
                             }
                         }
-                        else{
+                        else {
                             // If attacking unit is in formation and defending unit is not fortified, highlight the target
-                            if(attackingUnit.is_in_formation || attackingUnit.is_fortified){
+                            if (attackingUnit.is_in_formation || attackingUnit.is_fortified) {
                                 this.highlightUnit(unit.unit_id);
                             }
                         }
@@ -1568,7 +1568,7 @@ define([
                 dojo.subscribe('updateUnit', this, "notif_updateUnit");
             },
 
-            notif_updateUnit: function(notif){
+            notif_updateUnit: function (notif) {
                 debugger;
                 let unit_id = notif.args.unit_id;
                 let is_in_formation = notif.args.is_in_formation;
