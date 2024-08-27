@@ -238,6 +238,9 @@ define([
                     return;
                 }
 
+                if (this.infantryOnlyMode && this.isUnitOnBoard(event.target))
+                    return;
+
                 // Get the current player's color
                 var currentPlayerColor = this.playerColor;
 
@@ -477,7 +480,7 @@ define([
                     /////////////////////////////////////// Move ////////////////////////////////////////////
                     /////////////////////////////////////////////////////////////////////////////////////////
                     // If unit is selected and is on the board, then it is a move
-                    if (this.selectedUnit && this.isUnitOnBoard(this.selectedUnit)) {
+                    if (this.selectedUnit && this.isUnitOnBoard(this.selectedUnit) && !this.infantryOnlyMode) {
                         // If slot is occupied and selected unit is friendly, then highlight movable slots
                         if (this.isSlotOccupied(slot)) {
                             if (this.getUnitDetails(this.selectedUnit).player_id == this.player_id) {
@@ -1085,6 +1088,7 @@ define([
                 var adjacentUnits = this.getAdjacentUnits(attackingUnit, true);
 
                 adjacentUnits.forEach(unit => {
+                    debugger;
                     if (unit.player_id != this.player_id) {
                         // Check if the attacking unit is fortified or in formation
                         if (unit.is_fortified) {
