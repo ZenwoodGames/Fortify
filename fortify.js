@@ -344,11 +344,9 @@ define([
                                 });
                             }
                             else {
-                                if (this.selectedUnit.classList[1] != 'artillery') {
-                                    dojo.query('.shore:not(:has(.unit))').forEach(shore => {
-                                        dojo.addClass(shore.id, 'highlighted')
-                                    });
-                                }
+                                dojo.query('.shore:not(:has(.unit))').forEach(shore => {
+                                    dojo.addClass(shore.id, 'highlighted')
+                                });
                             }
                         }
                     }
