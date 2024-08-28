@@ -1745,6 +1745,12 @@ class Fortify extends Table
 
             // Start a new volley if the game hasn't ended
             if ($volleyCount < 3) {
+                self::notifyAllPlayers('playerWin', '', array(
+                    'volleyCount' => $this->volleyCount,
+                    'players' => $players,
+                    'volleyWinner' => $activePlayerId
+                ));
+
                 $this->gamestate->nextState('newVolley');
                 return true;
             } else {

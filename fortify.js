@@ -1120,19 +1120,19 @@ define([
                 });
             },
 
-            highlightUnitInFormation(){
+            highlightUnitInFormation() {
                 let units = this.getAllUnitsOnBoard();
 
                 units.forEach(unit => {
                     debugger;
                     let inFormation = parseInt(unit.is_in_formation)
 
-                    if(inFormation && !unit.is_fortified && unit.player_id == this.player_id)
+                    if (inFormation && !unit.is_fortified && unit.player_id == this.player_id)
                         $(unit.unit_id).classList.add('formation');
                 });
             },
 
-            deselectUnitInFormation(){
+            deselectUnitInFormation() {
                 let units = this.getAllUnitsOnBoard();
 
                 units.forEach(unit => {
@@ -1597,10 +1597,32 @@ define([
                 dojo.subscribe('unitReturnedToSupply', this, "notif_unitReturnedToSupply");
                 dojo.subscribe('reinforcementTrackUpdated', this, "notif_reinforcementTrackUpdated");
                 dojo.subscribe('newVolley', this, "notif_newVolley");
+                dojo.subscribe('playerWin', this, "notif_PlayerWin");
                 dojo.subscribe('updatePlayerPanel', this, "notif_updatePlayerPanel");
                 dojo.subscribe('pointsUpdated', this, "notif_pointsUpdated");
                 dojo.subscribe('enlistSkipped', this, "notif_enlistSkipped");
                 dojo.subscribe('updateUnit', this, "notif_updateUnit");
+            },
+
+            notif_PlayerWin: function (notif) {
+                debugger;
+                // Create and show a popup
+                var winner = notif.args.volleyWinner;
+                var winnerName = this.gamedatas.players[winner].name;
+                var winnerColor = this.gamedatas.players[winner].color;
+
+                var popupContent = '<div id="volley-winner-popup" style="background-color: #f0f0f0; border: 2px solid ' + winnerColor + '; padding: 20px; text-align: center;">' +
+                    '<h2 style="color: ' + winnerColor + ';">' + _("Volley Winner") + '</h2>' +
+                    '<p>' + dojo.string.substitute(_('${playerName} wins this volley!'), { playerName: winnerName }) + '</p>' +
+                    '</div>';
+
+                // Show the popup
+                this.showMessage(popupContent, 'info');
+
+                // Automatically close the popup after 3 seconds
+                setTimeout(() => {
+                    dojo.query('#volley-winner-popup').forEach(dojo.destroy);
+                }, 5000);
             },
 
             notif_updateUnit: function (notif) {
@@ -1637,13 +1659,6 @@ define([
                 debugger;
                 // Reset the board
                 this.resetBoard(notif.args.players);
-                //this.setup(this.gamedatas);
-                // Update player colors and decks
-                for (var playerId in notif.args.players) {
-                    var player = notif.args.players[playerId];
-                    //this.updatePlayerColor(playerId, player.player_color);
-                    //this.resetPlayerDeck(playerId, player.player_color);
-                }
 
                 // Show a message about the new volley
                 this.showMessage(_("A new volley begins! Players have switched colors."), 'info');
