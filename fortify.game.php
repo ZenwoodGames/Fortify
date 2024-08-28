@@ -178,7 +178,7 @@ class Fortify extends Table
         );
 
         // If the game variant is Special Warfare (3), add chopper and artillery units
-        if (self::getGameStateValue('gameVariant') == 3) {
+        if (self::getGameStateValue('gameVariant') == 3 || self::getGameStateValue('gameVariant') == 5) {
             $result['decks']['bottom']['chopper'] = array(
                 array('type' => 'chopper', 'player' => 'red')
             );
