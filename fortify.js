@@ -1012,6 +1012,7 @@ define([
             },
 
             exitFortifyMode: function () {
+                debugger;
                 this.fortifyMode = false;
                 dojo.removeClass('btnFortify', 'active');
                 this.deselectUnitInFormation();
@@ -1138,7 +1139,7 @@ define([
                     debugger;
                     let inFormation = parseInt(unit.is_in_formation)
 
-                    if(inFormation && !unit.is_fortified && unit.player_id == this.player_id)
+                    if ($(unit.unit_id).classList.contains('formation'))
                         $(unit.unit_id).classList.remove('formation');
                 });
             },
