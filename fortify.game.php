@@ -493,7 +493,7 @@ class Fortify extends Table
         }
 
         // Validate the coordinates
-        if (self::getGameStateValue('gameVariant') == 4 || self::getGameStateValue('gameVariant') == 4) {
+        if (self::getGameStateValue('gameVariant') == 4 || self::getGameStateValue('gameVariant') == 5) {
             if ($x < 0 || $x > 4 || $y < 0 || $y > 4) {
                 throw new BgaUserException(self::_("Invalid coordinates"));
             }
