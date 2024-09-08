@@ -292,7 +292,7 @@ define([
                 this.selectedUnit = event.target;
 
                 this.removeSlotHighlight();
-
+                this.clearHighlights();
                 if (this.isCurrentPlayerActive()) {
 
                     var clickedUnitId = event.currentTarget.id;
@@ -1156,19 +1156,23 @@ define([
                     if (adjacentX >= 0 && adjacentX < 5 && adjacentY >= 0 && adjacentY < 5) {
                         var adjacentSlot = $('board_slot_' + adjacentX + '_' + adjacentY);
                         if (!adjacentSlot) return;
-                        var adjacentUnit = adjacentSlot.querySelector('.unit');
+                        var adjUnits = Array.from(adjacentSlot.children);
+                        //var adjacentUnit = adjacentSlot.querySelector('.unit');
 
-                        if (adjacentUnit) {
-                            if (isEnemyUnit && adjacentUnit.dataset.color == this.playerColor)
-                                return;
-
-                            adjacentUnits.push({
-                                unit_id: adjacentUnit.id,
-                                x: adjacentX,
-                                y: adjacentY,
-                                type: this.getUnitType(adjacentUnit),
-                                player_id: this.getUnitPlayerId(adjacentUnit),
-                                is_fortified: adjacentUnit.classList.contains('fortified')
+                        if (adjUnits && adjUnits.length > 0) {
+                            debugger;
+                            adjUnits.forEach(unit => {
+                                if (isEnemyUnit && unit.dataset.color == this.playerColor)
+                                    return;
+    
+                                adjacentUnits.push({
+                                    unit_id: unit,
+                                    x: adjacentX,
+                                    y: adjacentY,
+                                    type: this.getUnitType(unit),
+                                    player_id: this.getUnitPlayerId(unit),
+                                    is_fortified: unit.classList.contains('fortified')
+                                });
                             });
                         }
                     }
