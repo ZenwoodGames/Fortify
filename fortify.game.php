@@ -334,7 +334,8 @@ class Fortify extends Table
     }
 
     // Get all the units in DB
-    private function getAllUnits(){
+    private function getAllUnits()
+    {
         $sql = "SELECT * FROM units";
         return self::getObjectListFromDB($sql);
     }
@@ -425,7 +426,8 @@ class Fortify extends Table
         return self::getGameStateValue('gameVariant');
     }
 
-    private function setUnitFormationAndUpdate($unit, $value){
+    private function setUnitFormationAndUpdate($unit, $value)
+    {
         self::serverLog("Inside setUnitFormation method", "");
 
         if (($value == 1 && $unit['in_formation'] == 0) || ($value == 0 && $unit['in_formation'] == 1)) {
@@ -687,12 +689,12 @@ class Fortify extends Table
                 }
             }
         }
-        
+
         // Update state of units
         $units = self::getAllUnits();
         self::serverLog("all units during fortify", $units);
 
-        foreach($units as $unit){
+        foreach ($units as $unit) {
             self::isUnitInFormation($unit);
         }
     }
@@ -828,7 +830,7 @@ class Fortify extends Table
         $units = self::getAllUnits();
         self::serverLog("all units during fortify", $units);
 
-        foreach($units as $unit){
+        foreach ($units as $unit) {
             self::isUnitInFormation($unit);
         }
     }
@@ -958,7 +960,7 @@ class Fortify extends Table
         $units = self::getAllUnits();
         self::serverLog("all units during fortify", $units);
 
-        foreach($units as $unit){
+        foreach ($units as $unit) {
             self::isUnitInFormation($unit);
         }
     }
@@ -1211,7 +1213,6 @@ class Fortify extends Table
         if (empty($adjacentInfantry)) {
             $this->serverLog("No adjacent friendly infantry found", null);
             self::setUnitFormationAndUpdate($centerUnit, 0);
-
             return null;
         }
 
@@ -1226,17 +1227,6 @@ class Fortify extends Table
 
             $potentialFormation = [$centerUnit, $partnerInfantry];
 
-            // Check if either the center unit or partner infantry is fortified
-            if ($centerUnit['is_fortified'] == '1' || $partnerInfantry['is_fortified'] == '1') {
-                $this->serverLog("Valid formation found (one unit is fortified)", $potentialFormation);
-
-                // foreach ($potentialFormation as $unit) {
-                //     self::setUnitFormationAndUpdate($unit, 1);
-                // }
-                self::setUnitFormationAndUpdate($centerUnit, 1);
-                return $potentialFormation;
-            }
-
             // Get all units adjacent to both infantry units
             $allAdjacentUnits = array_merge(
                 $this->getAdjacentUnits($centerUnit),
@@ -1250,12 +1240,11 @@ class Fortify extends Table
                 if (
                     $adjacentUnit['player_id'] == $centerUnit['player_id'] &&
                     $adjacentUnit['is_fortified'] == '1' &&
+                    $adjacentUnit['unit_id'] != $centerUnit['unit_id'] &&
+                    $adjacentUnit['unit_id'] != $partnerInfantry['unit_id'] &&
                     ($this->areUnitsAdjacent($centerUnit, $adjacentUnit) || $this->areUnitsAdjacent($partnerInfantry, $adjacentUnit))
                 ) {
                     $this->serverLog("Valid formation found (adjacent fortified unit)", $potentialFormation);
-                    // foreach ($potentialFormation as $unit) {
-                    //     self::setUnitFormationAndUpdate($unit, 1);
-                    // }
                     self::setUnitFormationAndUpdate($centerUnit, 1);
                     return $potentialFormation;
                 }
@@ -1263,7 +1252,6 @@ class Fortify extends Table
         }
 
         self::setUnitFormationAndUpdate($centerUnit, 0);
-
         $this->serverLog("No valid formation found", null);
         return null;
     }
@@ -1296,7 +1284,7 @@ class Fortify extends Table
                 if ($thirdUnit !== null) {
                     // Found a valid formation
                     $formation = [$centerUnit, $adjacentTank, $thirdUnit];
-                    
+
                     self::setUnitFormationAndUpdate($centerUnit, 1);
                     return $formation;
                 }
@@ -1314,7 +1302,7 @@ class Fortify extends Table
                     // Found a valid tank formation
                     self::serverLog("Found a valid tank formation", "");
                     $formation = [$centerUnit, $adjacentTank, $thirdUnit];
-                    
+
                     self::setUnitFormationAndUpdate($centerUnit, 1);
                     return $formation;
                 }
@@ -1394,11 +1382,14 @@ class Fortify extends Table
         $this->setGameStateValue('actionsRemaining', $actionsRemaining);
 
         // Notify all players about the skipped enlistment
-        self::notifyAllPlayers('enlistSkipped', 
-            clienttranslate('${player_name} skipped the second infantry enlistment'), [
-            'player_id' => $player_id,
-            'player_name' => self::getActivePlayerName()
-        ]);
+        self::notifyAllPlayers(
+            'enlistSkipped',
+            clienttranslate('${player_name} skipped the second infantry enlistment'),
+            [
+                'player_id' => $player_id,
+                'player_name' => self::getActivePlayerName()
+            ]
+        );
 
         // Check if the turn should end
         if ($actionsRemaining == 0) {
@@ -1451,9 +1442,11 @@ class Fortify extends Table
         }
 
         // Check if the attacking unit is in formation or fortified
-        if (!$this->isUnitInFormation($attackingUnit) 
-            && !$attackingUnit['is_fortified'] 
-            && $attackingUnit['type'] != 'artillery') {
+        if (
+            !$this->isUnitInFormation($attackingUnit)
+            && !$attackingUnit['is_fortified']
+            && $attackingUnit['type'] != 'artillery'
+        ) {
             throw new BgaUserException(self::_("The attacking unit must be in formation"));
         }
 
@@ -1519,7 +1512,7 @@ class Fortify extends Table
         $units = self::getAllUnits();
         self::serverLog("all units during fortify", $units);
 
-        foreach($units as $unit){
+        foreach ($units as $unit) {
             self::isUnitInFormation($unit);
         }
     }
