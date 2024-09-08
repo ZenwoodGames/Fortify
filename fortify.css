@@ -331,14 +331,15 @@
     border-radius: 5px;
     position: absolute;
     z-index: 1;
-    left: -500px;
+    left: -500px; /* Initially hidden */
+    transition: display 0.3s ease-in-out; /* Smooth transition effect */
 }
 
-#points_container {
+/* #points_container {
     display: flex;
     justify-content: space-around;
     align-items: center;
-}
+} */
 
 .player_points {
     font-size: 18px;

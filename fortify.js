@@ -124,7 +124,16 @@ define([
                 // Add event listener for the attack button
                 dojo.connect($('btnAttack'), 'onclick', this, 'onAttackButtonClick');
 
+                var toggleButton = dojo.create('button', {
+                    id: 'toggle_points_display',
+                    innerHTML: _('Toggle Points'),
+                    style: 'position: absolute; top: calc(1vh); left: calc(1vw - 122%); z-index: 1000; width: 25%; height: 22px'
+                }, $('pointTextContainer'));
+                
+                dojo.connect(toggleButton, 'onclick', this, 'togglePointsDisplay');
+
                 $('points_title').innerHTML = gamedatas.POINTS_TITLE;
+                
                 this.setupPointsDisplay(gamedatas.players);
 
                 this.setupHelpButton();
@@ -143,7 +152,18 @@ define([
                 }
                 dojo.connect($('btnSkipEnlist'), 'onclick', this, 'skipEnlist');
 
+                
+
                 console.log("Ending game setup");
+            },
+
+            togglePointsDisplay: function() {
+                var pointsDisplay = $('points_display');
+                if (pointsDisplay.style.display == 'none') {
+                    pointsDisplay.style.display = 'block';
+                } else {
+                    pointsDisplay.style.display = 'none';
+                }
             },
 
             placeUnitOnBoard: function (unitId, unitType, x, y, playerId, is_fortified, in_formation) {
@@ -751,41 +771,6 @@ define([
                 }
             },
 
-            // highlightValidUnitsForFortification() {
-            //     // Remove existing highlights
-            //     dojo.query('.unit.highlight-fortify').removeClass('highlight-fortify');
-
-            //     // Highlight valid units for fortification
-            //     dojo.query('.unit.' + this.player_color).forEach(unit => {
-            //         debugger;
-            //         if (this.isValidForFortification(unit)) {
-            //             dojo.addClass(unit, 'highlight-fortify');
-            //         }
-            //     });
-            // },
-
-            // isValidForFortification(unit) {
-            //     debugger;
-            //     if (dojo.hasClass(unit, 'chopper')) {
-            //         // Special rule for Choppers
-            //         var chopperSpace = unit.parentNode;
-            //         var x = parseInt(chopperSpace.dataset.x);
-            //         var y = parseInt(chopperSpace.dataset.y);
-
-            //         // Check the space below for a friendly fortified battleship
-            //         var spaceBelow = dojo.query('.board-slot[data-x="' + x + '"][data-y="' + (y + 1) + '"]')[0];
-            //         if (spaceBelow) {
-            //             var battleshipBelow = dojo.query('.unit.battleship.' + this.player_color + '.fortified', spaceBelow)[0];
-            //             return !!battleshipBelow;
-            //         }
-            //         return false;
-            //     } else {
-            //         // For other unit types, use existing logic (assuming it's implemented)
-            //         // This might involve checking for valid formations
-            //         return this.checkValidFormation(unit);
-            //     }
-            // },
-
             divYou: function () {
                 var color = this.gamedatas.players[this.player_id].color;
                 var color_bg = "";
@@ -803,9 +788,9 @@ define([
                     var pointsDiv = dojo.create('div', {
                         id: 'player_points_' + playerId,
                         class: 'player_points',
-                        innerHTML: '<span style="color:#' + player.color + ';">' + player.name + '</span>: ' +
-                            '<span class="points_value" id="points_value_' + playerId + '">' + player.score + '</span> ' +
-                            this.gamedatas.POINTS_LABEL
+                        innerHTML:  '<span style="color:' + player.color + ';">' + player.name + '</span>: ' +
+                                    '<span class="points_value" id="points_value_' + playerId + '">' + player.score + '</span> ' +
+                                    this.gamedatas.POINTS_LABEL
                     }, pointsContainer);
                 }
             },

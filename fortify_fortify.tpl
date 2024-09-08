@@ -12,7 +12,7 @@
             <div id="chopper_deck" class="unit_deck chopper_deck"></div>
             <div id="artillery_deck_fortified" class="unit_deck artillery_deck"></div>
             <div id="help-button">?</div>
-        </div>       
+        </div>
         <div id="action-counter"></div>
         <div id="board_container">
             <div class="action-menu">
@@ -21,10 +21,12 @@
                 <button class="action-button" id="btnAttack" style="display: none;">ATTACK BOTTOM UNIT</button>
                 <button class="action-button" id="btnSkipEnlist" style="display: none;">SKIP ENLIST</button>
             </div>
-            <div id="points_display" class="whiteblock">
-                <h3 id="points_title"></h3>
-                <div id="points_container">
-                    <!-- Points will be inserted here by JavaScript -->
+            <div id="pointTextContainer">
+                <div id="points_display" class="whiteblock">
+                        <h3 id="points_title"></h3>
+                        <div id="points_container">
+                            <!-- Points will be inserted here by JavaScript -->
+                        </div>
                 </div>
             </div>
             <div id="board">
