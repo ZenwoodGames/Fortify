@@ -70,7 +70,7 @@ $machinestates = array(
         "descriptionmyturn" => clienttranslate('${you} must take an action'),
         "type" => "activeplayer",
         "args" => "argPlayerTurn",
-        "updateGameProgression" => "getGameProgression",
+        "updateGameProgression" => "true",
         "possibleactions" => array("enlist", "move", "fortify", "attack", "pass", "skipEnlist"),
         "transitions" => array(
             "nextPlayer" => ST_NEXT_PLAYER,
@@ -86,7 +86,7 @@ $machinestates = array(
         "descriptionmyturn" => clienttranslate('${you} must enlist a unit'),
         "type" => "activeplayer",
         "possibleactions" => array("enlist", "skipEnlist"),
-        "updateGameProgression" => "getGameProgression",
+        "updateGameProgression" => "true",
         "transitions" => array(
             "stayInState" => ST_PLAYER_F_ENLIST,
             "nextPlayer" => ST_NEXT_PLAYER,
@@ -101,7 +101,7 @@ $machinestates = array(
         "descriptionmyturn" => clienttranslate('${you} must take up to two Actions'),
         "type" => "activeplayer",
         "args" => "argPlayerTurn",
-        "updateGameProgression" => "getGameProgression",
+        "updateGameProgression" => "true",
         "possibleactions" => array("enlist", "move", "fortify", "attack", "pass", "endTurn", "skipEnlist"),
         "transitions" => array(
             "nextPlayer" => ST_NEXT_PLAYER,
@@ -117,7 +117,7 @@ $machinestates = array(
         'description' => '',
         'type' => 'game',
         'action' => 'stNextPlayer',
-        "updateGameProgression" => "getGameProgression",
+        "updateGameProgression" => "true",
         "transitions" => array(
             "playerFirstTurn" => ST_PLAYER_F_TURN,
             "playerFirstEnlist" => ST_PLAYER_F_ENLIST,
@@ -132,7 +132,7 @@ $machinestates = array(
         "description" => clienttranslate("Starting a new volley"),
         "type" => "game",
         "action" => "stNewVolley",
-        "updateGameProgression" => "getGameProgression",
+        "updateGameProgression" => "true",
         "transitions" => array(
             "" => ST_PLAYER_F_TURN
         )
@@ -144,7 +144,7 @@ $machinestates = array(
         "type" => "manager",
         "action" => "stEndGame",
         "args" => "argEndGame",
-        "updateGameProgression" => "getGameProgression",
+        "updateGameProgression" => "true",
         "transitions" => array("" => ST_FINAL_SCORE)
     ),
 
@@ -152,7 +152,7 @@ $machinestates = array(
         "name" => "finalScore",
         "description" => clienttranslate("Game end"),
         "type" => "game",
-        "updateGameProgression" => "getGameProgression",
+        "updateGameProgression" => "true",
         "action" => "stFinalScore",
         "transitions" => array("" => ST_END_GAME)
     ),
