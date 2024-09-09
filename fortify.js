@@ -465,7 +465,7 @@ define([
                             else {
                                 this.finishEnlist(this.selectedSpecialUnit.classList[1],
                                     slot.dataset.x, slot.dataset.y,
-                                    this.selectedSpecialUnit.id, this.selectedUnit.classList.contains('fortified'));
+                                    this.selectedSpecialUnit.id, this.selectedSpecialUnit.classList.contains('fortified'));
                             }
                             return;
                         }
@@ -1608,10 +1608,10 @@ define([
                 // Show the popup
                 this.showMessage(popupContent, 'info');
 
-                // Automatically close the popup after 3 seconds
+                // Automatically close the popup after 6 seconds
                 setTimeout(() => {
                     dojo.query('#volley-winner-popup').forEach(dojo.destroy);
-                }, 5000);
+                }, 6000);
             },
 
             notif_updateUnit: function (notif) {
