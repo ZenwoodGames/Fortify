@@ -124,7 +124,7 @@ class Fortify extends Table
                 infantry_enlist_count infantryEnlistCount FROM player";
         $result['players'] = self::getCollectionFromDb($sql);
 
-        $this->serverLog("players", $result['players']);
+        // $this->serverLog("players", $result['players']);
 
         // Get units & their data
         $sql = "SELECT id, type, player_id, x, y, unit_id, is_fortified, in_formation FROM units";
@@ -276,7 +276,7 @@ class Fortify extends Table
                 $unitCount = $this->getUniqueValueFromDB("SELECT COUNT(*) FROM units");
                 $playerCount = count($this->loadPlayersBasicInfos());
 
-                self::serverLog("Infantry Enlist Count", self::getInfantryEnlistCount($player_id));
+                // self::serverLog("Infantry Enlist Count", self::getInfantryEnlistCount($player_id));
 
                 if (self::getInfantryEnlistCount($player_id)) {
                     // Not all players have placed their first unit yet
@@ -297,7 +297,7 @@ class Fortify extends Table
             }
         } else {
             if ($actionsRemaining == 0) {
-                $this->serverLog("No actions are remaining", "");
+                // $this->serverLog("No actions are remaining", "");
                 $actionsRemaining = 2;
                 $this->setGameStateValue('actionsRemaining', $actionsRemaining);
                 $player_id = self::activeNextPlayer();
@@ -307,8 +307,8 @@ class Fortify extends Table
             $this->gamestate->nextState('playerTurn');
         }
 
-        $this->serverLog("Notify clients about the updated action count", "");
-        $this->serverLog("actionsRemaining", $actionsRemaining);
+        // $this->serverLog("Notify clients about the updated action count", "");
+        // $this->serverLog("actionsRemaining", $actionsRemaining);
         // Notify clients about the updated action count
         self::notifyAllPlayers('actionsRemaining', '', array(
             'actionsRemaining' => $actionsRemaining
@@ -459,7 +459,7 @@ class Fortify extends Table
 
     function enlist($unitType, $x, $y, $unitId, $is_fortified)
     {
-        $this->serverLog("is_fortified", $is_fortified);
+        // $this->serverLog("is_fortified", $is_fortified);
         $is_fortified = (int)$is_fortified;
 
         // Check if it's a valid action
@@ -514,8 +514,8 @@ class Fortify extends Table
             }
         }
 
-        $this->serverLog("unitType", $unitType);
-        $this->serverLog("gamestate", $this->gamestate);
+        // $this->serverLog("unitType", $unitType);
+        // $this->serverLog("gamestate", $this->gamestate);
 
         $infantryEnlistCount = $this->getInfantryEnlistCount($player_id);
 
@@ -610,11 +610,11 @@ class Fortify extends Table
         if ($isFirstRound) {
             if (($isVeryFirstTurn || $actionsRemaining == 0)) {
                 if ($infantryEnlistCount == 1) {
-                    $this->serverLog("First infantry enlisted", "");
+                    // $this->serverLog("First infantry enlisted", "");
                     //$this->gamestate->nextState('stayInState');
                 } else {
                     // If it's the very first turn or we've used all actions, move to next player
-                    $this->serverLog("If it's the very first turn or we've used all actions, move to next player", "");
+                    // $this->serverLog("If it's the very first turn or we've used all actions, move to next player", "");
                     $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
                     $this->setGameStateValue('actionsRemaining', $actionsRemaining);
                     $this->setGameStateValue('isVeryFirstTurn', 0);
@@ -623,11 +623,11 @@ class Fortify extends Table
             } else {
                 // Either this is second player's first turn or
                 // Otherwise, go to regular first round turn
-                $this->serverLog("Otherwise, go to regular first round turn", "");
+                // $this->serverLog("Otherwise, go to regular first round turn", "");
                 if ($infantryEnlistCount == 1) {
-                    $this->serverLog("First infantry enlisted", "");
+                    // $this->serverLog("First infantry enlisted", "");
                 } else {
-                    $this->serverLog("Enlist is done or skipped", "");
+                    // $this->serverLog("Enlist is done or skipped", "");
                     $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
                     $this->setGameStateValue('actionsRemaining', $actionsRemaining);
                     $this->gamestate->nextState('nextPlayer');
@@ -641,12 +641,12 @@ class Fortify extends Table
                 $sql = "SELECT COUNT(*) FROM units";
                 $unitCount = self::getUniqueValueFromDB($sql);
 
-                $this->serverLog("unitCount", $unitCount);
-                $this->serverLog("playerCount", count($this->loadPlayersBasicInfos()));
+                // $this->serverLog("unitCount", $unitCount);
+                // $this->serverLog("playerCount", count($this->loadPlayersBasicInfos()));
 
                 if ($unitCount >= count($this->loadPlayersBasicInfos())) {
                     // If all players have placed their first unit, end first round
-                    $this->serverLog("If all players have placed their first unit, end first round", "");
+                    // $this->serverLog("If all players have placed their first unit, end first round", "");
 
                     $this->setGameStateValue('isFirstRound', 0);
                     $this->gamestate->nextState('nextPlayer');
@@ -654,21 +654,21 @@ class Fortify extends Table
             }
         } else {
             // Regular round logic
-            $this->serverLog("Regular round logic", "");
+            // $this->serverLog("Regular round logic", "");
 
             if ($actionsRemaining == 0) {
                 if ($infantryEnlistCount == 1) {
-                    $this->serverLog("one infantry enlisted. infantryEnlistCount = ", "$infantryEnlistCount");
+                    // $this->serverLog("one infantry enlisted. infantryEnlistCount = ", "$infantryEnlistCount");
                 } else {
-                    $this->serverLog("No infantry to enlist. infantryEnlistCount = ", "$infantryEnlistCount");
+                    // $this->serverLog("No infantry to enlist. infantryEnlistCount = ", "$infantryEnlistCount");
 
                     $actionsRemaining = $this->getGameStateValue('actionsRemaining') - 1;
                     $this->setGameStateValue('actionsRemaining', $actionsRemaining);
                     $this->gamestate->nextState('nextPlayer');
                 }
             } else {
-                $this->serverLog("More than 1 actions remaining. actionsRemaining = ", "$actionsRemaining");
-                $this->serverLog("infantryEnlistCount = ", "$infantryEnlistCount");
+                // $this->serverLog("More than 1 actions remaining. actionsRemaining = ", "$actionsRemaining");
+                // $this->serverLog("infantryEnlistCount = ", "$infantryEnlistCount");
 
                 if ($infantryEnlistCount == 1) {
                 } else {
@@ -745,7 +745,7 @@ class Fortify extends Table
             throw new BgaUserException(self::_("Invalid move"));
         }
 
-        $this->serverLog("gameVariant", self::getGameStateValue('gameVariant'));
+        // $this->serverLog("gameVariant", self::getGameStateValue('gameVariant'));
 
         if ($unitType == 'chopper' && self::getGameStateValue('gameVariant') == 3) {
             // Choppers can move anywhere
@@ -759,12 +759,12 @@ class Fortify extends Table
             $this->serverLog("occupiedUnit sql", $sql);
 
             if ($occupiedUnit) {
-                $this->serverLog("has occupiedUnit", $occupiedUnit);
+                // $this->serverLog("has occupiedUnit", $occupiedUnit);
                 // Stack the chopper on top of the unit
                 $sql = "UPDATE units SET is_stacked = 1 WHERE unit_id = '$unitId'";
                 self::DbQuery($sql);
 
-                $this->serverLog("updated is_stacked = 1", "");
+                // $this->serverLog("updated is_stacked = 1", "");
 
                 // Mark the occupied unit as non-functional
                 $sql = "UPDATE units SET is_occupied = 1 WHERE unit_id = '{$occupiedUnit['unit_id']}'";
@@ -846,13 +846,13 @@ class Fortify extends Table
         // Check if the destination is empty
         $sql = "SELECT COUNT(*) FROM units WHERE x = $toX AND y = $toY";
         if (self::getUniqueValueFromDB($sql) > 0) {
-            $this->serverLog("more than 1 unique value found", "");
+            // $this->serverLog("more than 1 unique value found", "");
             return false;
         }
 
         // Check if it's an orthogonal adjacent move
         if (($fromX == $toX && abs($fromY - $toY) == 1) || ($fromY == $toY && abs($fromX - $toX) == 1)) {
-            $this->serverLog("not an orthogonal adjacent move", "");
+            // $this->serverLog("not an orthogonal adjacent move", "");
             return true;
         }
 
@@ -862,7 +862,7 @@ class Fortify extends Table
                 (x = $toX AND (y = $toY - 1 OR y = $toY + 1)) OR
                 (y = $toY AND (x = $toX - 1 OR x = $toX + 1)))";
         if (self::getUniqueValueFromDB($sql) > 0) {
-            $this->serverLog("an orthogonal jump to a space adjacent to a friendly unit", "");
+            // $this->serverLog("an orthogonal jump to a space adjacent to a friendly unit", "");
             return true;
         }
 
@@ -877,11 +877,11 @@ class Fortify extends Table
         $player_id = self::getActivePlayerId();
 
         $infantryEnlistCount = $this->getInfantryEnlistCount($player_id);
-        self::serverLog("infantryEnlistCount", $infantryEnlistCount);
+        // self::serverLog("infantryEnlistCount", $infantryEnlistCount);
 
         $unit = self::getUnitDetails($unitId);
 
-        $this->serverLog("Selected unit for fortification", $unit);
+        // $this->serverLog("Selected unit for fortification", $unit);
 
         if (!$unit) {
             throw new BgaUserException(self::_("Invalid unit"));
@@ -897,12 +897,12 @@ class Fortify extends Table
 
         // Get adjacent units
         $adjacentUnits = $this->getAdjacentUnits($unit);
-        $this->serverLog("Adjacent units", $adjacentUnits);
+        // $this->serverLog("Adjacent units", $adjacentUnits);
 
         // Check if there's a valid formation
         $formation = $this->findValidFormation($unit, $adjacentUnits);
 
-        $this->serverLog("Resulting formation", $formation);
+        // $this->serverLog("Resulting formation", $formation);
 
         if (!$formation && $unit['type'] != 'artillery') {
             throw new BgaUserException(self::_("No valid formation found"));
@@ -925,7 +925,7 @@ class Fortify extends Table
 
         if ($infantryEnlistCount == 1) {
             $actionsRemaining = $this->getGameStateValue('actionsRemaining');
-            self::serverLog("actions remaining", $actionsRemaining);
+            // self::serverLog("actions remaining", $actionsRemaining);
 
             if ($actionsRemaining == 2) {
                 $this->setInfantryEnlistCount($player_id, 0);
@@ -973,8 +973,8 @@ class Fortify extends Table
     private function findValidFormation($centerUnit, $adjacentUnits)
     {
         $this->serverLog("Entering findValidFormation", "");
-        $this->serverLog("Center unit", $centerUnit);
-        $this->serverLog("Adjacent units", $adjacentUnits);
+        // $this->serverLog("Center unit", $centerUnit);
+        // $this->serverLog("Adjacent units", $adjacentUnits);
 
         switch ($centerUnit['type']) {
             case 'battleship':
@@ -1015,12 +1015,12 @@ class Fortify extends Table
     private function checkBattleshipFormation($centerUnit, $adjacentUnits)
     {
         $this->serverLog("Checking Battleship Formation", "");
-        $this->serverLog("Center Unit", $centerUnit);
-        $this->serverLog("Adjacent Units", $adjacentUnits);
+        // $this->serverLog("Center Unit", $centerUnit);
+        // $this->serverLog("Adjacent Units", $adjacentUnits);
 
         // Check if the center unit is a single Battleship on a Shore space
         if ($this->isBattleshipOnShore($centerUnit)) {
-            $this->serverLog("Single Battleship on Shore space - can fortify", $centerUnit);
+            // $this->serverLog("Single Battleship on Shore space - can fortify", $centerUnit);
 
             self::setUnitFormationAndUpdate($centerUnit, 1);
             return [$centerUnit];
@@ -1028,16 +1028,16 @@ class Fortify extends Table
 
         // Get all battleships in a wider area
         $allNearbyBattleships = $this->getNearbyBattleships($centerUnit);
-        $this->serverLog("All Nearby Battleships", $allNearbyBattleships);
+        // $this->serverLog("All Nearby Battleships", $allNearbyBattleships);
 
         // Add the center unit to the nearby battleships list
         array_unshift($allNearbyBattleships, $centerUnit);
-        $this->serverLog("All Battleships including center", $allNearbyBattleships);
+        // $this->serverLog("All Battleships including center", $allNearbyBattleships);
 
         // Check for any valid formation
         $formation = $this->checkFormationWithBattleships($centerUnit, $allNearbyBattleships);
         if ($formation !== null) {
-            $this->serverLog("Valid formation found", $formation);
+            // $this->serverLog("Valid formation found", $formation);
             self::setUnitFormationAndUpdate($centerUnit, 1);
             return $formation;
         }
@@ -1135,8 +1135,8 @@ class Fortify extends Table
         WHERE player_id = " . self::escapeString($centerUnit['player_id']) . "
         AND type = 'battleship'";
         $result = self::getObjectListFromDB($sql);
-        $this->serverLog("getNearbyBattleships SQL", $sql);
-        $this->serverLog("getNearbyBattleships result", $result);
+        // $this->serverLog("getNearbyBattleships SQL", $sql);
+        // $this->serverLog("getNearbyBattleships result", $result);
         return $result;
     }
 
@@ -1144,11 +1144,11 @@ class Fortify extends Table
     {
         foreach ($battleships as $battleship) {
             if (intval($battleship['x']) == $x && intval($battleship['y']) == $y) {
-                $this->serverLog("Battleship found at position ($x, $y)", $battleship);
+                // $this->serverLog("Battleship found at position ($x, $y)", $battleship);
                 return $battleship;
             }
         }
-        $this->serverLog("No battleship found at position ($x, $y)", "");
+        // $this->serverLog("No battleship found at position ($x, $y)", "");
         return null;
     }
 
@@ -1171,9 +1171,9 @@ class Fortify extends Table
     private function getSpaceType($x, $y)
     {
         $this->serverLog("Entered getSpaceType method", "");
-        $this->serverLog("GameVariant =", self::getGameStateValue('gameVariant'));
-        $this->serverLog("x =", $x);
-        $this->serverLog("y =", $y);
+        // $this->serverLog("GameVariant =", self::getGameStateValue('gameVariant'));
+        // $this->serverLog("x =", $x);
+        // $this->serverLog("y =", $y);
 
         if (self::getGameStateValue('gameVariant') == 4 || self::getGameStateValue('gameVariant') == 5) {
             $shoreSpaces = [
@@ -1205,28 +1205,28 @@ class Fortify extends Table
     private function checkInfantryFormation($centerUnit, $adjacentUnits)
     {
         $this->serverLog("Checking infantry formation for unit", $centerUnit);
-        $this->serverLog("Adjacent units", $adjacentUnits);
+        // $this->serverLog("Adjacent units", $adjacentUnits);
 
         // Find adjacent friendly infantry units
         $adjacentInfantry = array_filter($adjacentUnits, function ($unit) use ($centerUnit) {
             return $unit['type'] == 'infantry' && $unit['player_id'] == $centerUnit['player_id'];
         });
 
-        $this->serverLog("Adjacent friendly infantry units", $adjacentInfantry);
+        // $this->serverLog("Adjacent friendly infantry units", $adjacentInfantry);
 
         // If there's no adjacent friendly infantry, return null
         if (empty($adjacentInfantry)) {
-            $this->serverLog("No adjacent friendly infantry found", null);
+            // $this->serverLog("No adjacent friendly infantry found", null);
             self::setUnitFormationAndUpdate($centerUnit, 0);
             return null;
         }
 
         foreach ($adjacentInfantry as $partnerInfantry) {
-            $this->serverLog("Checking potential formation with partner", $partnerInfantry);
+            // $this->serverLog("Checking potential formation with partner", $partnerInfantry);
 
             // Check if the partner infantry is actually adjacent
             if (!$this->areUnitsAdjacent($centerUnit, $partnerInfantry)) {
-                $this->serverLog("Partner infantry is not adjacent", null);
+                // $this->serverLog("Partner infantry is not adjacent", null);
                 continue;
             }
 
@@ -1238,7 +1238,7 @@ class Fortify extends Table
                 $this->getAdjacentUnits($partnerInfantry)
             );
 
-            $this->serverLog("All adjacent units to the formation", $allAdjacentUnits);
+            // $this->serverLog("All adjacent units to the formation", $allAdjacentUnits);
 
             // Check if there's any fortified friendly unit adjacent to either infantry
             foreach ($allAdjacentUnits as $adjacentUnit) {
@@ -1249,7 +1249,7 @@ class Fortify extends Table
                     $adjacentUnit['unit_id'] != $partnerInfantry['unit_id'] &&
                     ($this->areUnitsAdjacent($centerUnit, $adjacentUnit) || $this->areUnitsAdjacent($partnerInfantry, $adjacentUnit))
                 ) {
-                    $this->serverLog("Valid formation found (adjacent fortified unit)", $potentialFormation);
+                    // $this->serverLog("Valid formation found (adjacent fortified unit)", $potentialFormation);
                     self::setUnitFormationAndUpdate($centerUnit, 1);
                     return $potentialFormation;
                 }
@@ -1257,7 +1257,7 @@ class Fortify extends Table
         }
 
         self::setUnitFormationAndUpdate($centerUnit, 0);
-        $this->serverLog("No valid formation found", null);
+        // $this->serverLog("No valid formation found", null);
         return null;
     }
 
@@ -1349,8 +1349,8 @@ class Fortify extends Table
                 AND NOT (x = " . $unit['x'] . " AND y = " . $unit['y'] . ")
             )";
         $result = self::getObjectListFromDB($sql);
-        $this->serverLog("getAdjacentUnits SQL", $sql);
-        $this->serverLog("getAdjacentUnits result", $result);
+        // $this->serverLog("getAdjacentUnits SQL", $sql);
+        // $this->serverLog("getAdjacentUnits result", $result);
         return $result;
     }
 
@@ -1361,8 +1361,8 @@ class Fortify extends Table
                 is_stacked, in_formation FROM units 
             WHERE ((ABS(x - " . $unit['x'] . ") + ABS(y - " . $unit['y'] . ") = 1))";
         $result = self::getObjectListFromDB($sql);
-        $this->serverLog("get orthogonally AdjacentUnits SQL", $sql);
-        $this->serverLog("get orthogonally AdjacentUnits result", $result);
+        // $this->serverLog("get orthogonally AdjacentUnits SQL", $sql);
+        // $this->serverLog("get orthogonally AdjacentUnits result", $result);
         return $result;
     }
 
@@ -1655,9 +1655,9 @@ class Fortify extends Table
     {
         $sql = "SELECT * FROM reinforcement_track";
 
-        $this->serverLog("sql", $sql);
+        // $this->serverLog("sql", $sql);
         $reinforcementTrack = self::getCollectionFromDb($sql);
-        $this->serverLog("reinforcementTrack", $reinforcementTrack);
+        // $this->serverLog("reinforcementTrack", $reinforcementTrack);
 
         return $reinforcementTrack;
     }
@@ -1733,8 +1733,8 @@ class Fortify extends Table
             $volleyCount = $this->getVolleyCount();
             $playerWins = $this->getPlayerVolleyWins($activePlayerId);
 
-            $this->serverLog("volleyCount", $volleyCount);
-            $this->serverLog("playerVolleyWins", $playerWins);
+            // $this->serverLog("volleyCount", $volleyCount);
+            // $this->serverLog("playerVolleyWins", $playerWins);
 
             // Check if a player has won 2 volleys
             if ($playerWins == 2) {
@@ -1790,10 +1790,8 @@ class Fortify extends Table
 
     private function check2x2Fortification($playerId)
     {
-        // Implementation for checking 2x2 fortification
-        // This is a simplified version, you may need to adjust based on your board representation
         $board = $this->getBoard();
-        for ($x = 0; $x < 3; $x++) {
+        for ($x = 0; $x < 4; $x++) {
             for ($y = 0; $y < 4; $y++) {
                 if ($this->checkFortifiedSquare($board, $x, $y, $playerId)) {
                     return true;
@@ -1845,7 +1843,7 @@ class Fortify extends Table
 
     private function checkAllUnitsFortified($playerId)
     {
-        $this->serverLog("Entered checkAllUnitsFortified method", "");
+        // $this->serverLog("Entered checkAllUnitsFortified method", "");
 
         if ($this->getGameVariant() == 1 || $this->getGameVariant() == 2 || $this->getGameVariant() == 4) {
             $totalUnits = 12;
@@ -1921,10 +1919,10 @@ class Fortify extends Table
 
         // 2. Clear the board
         self::DbQuery("DELETE FROM units");
-        $this->serverLog("deleted all units", "");
+        // $this->serverLog("deleted all units", "");
         // 3. Clear the reinforcement track
         self::DbQuery("DELETE FROM reinforcement_track");
-        $this->serverLog("deleted all reinforcement_track", "");
+        // $this->serverLog("deleted all reinforcement_track", "");
 
         // 5. Reset game state values
         self::setGameStateValue('isFirstRound', 1);
