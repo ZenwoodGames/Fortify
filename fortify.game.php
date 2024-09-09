@@ -1520,6 +1520,11 @@ class Fortify extends Table
         foreach ($units as $unit) {
             self::isUnitInFormation($unit);
         }
+
+        // Check for game end conditions
+        if ($this->checkGameEnd()) {
+            return; // The game has ended, no need to proceed
+        }
     }
 
     private function getUnitDetails($unitId)
