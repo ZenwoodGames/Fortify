@@ -833,6 +833,11 @@ class Fortify extends Table
         foreach ($units as $unit) {
             self::isUnitInFormation($unit);
         }
+
+        // If the move causes the 2x2 foritified formation to occur, trigger win condition
+        if ($this->checkGameEnd()) {
+            return; // The game has ended, no need to proceed
+        }
     }
 
     function isValidMove($player_color, $fromX, $fromY, $toX, $toY)
@@ -1705,13 +1710,15 @@ class Fortify extends Table
         $endVolley = false;
 
         // Check for 2x2 fortification
-        if ($this->check2x2Fortification($activePlayerId)) {
+        if ($this->check2x2Fortification($activePlayerId) 
+            || $this->check2x2Fortification($this->getPlayerAfter($activePlayerId))) {
             $endVolley = true;
             self::notifyAllPlayers('debug', '2x2 fortification achieved', array());
         }
 
         // Check if all 12 units are fortified
-        if (!$endVolley && $this->checkAllUnitsFortified($activePlayerId)) {
+        if (!$endVolley && ($this->checkAllUnitsFortified($activePlayerId) 
+            || $this->checkAllUnitsFortified($this->getPlayerAfter($activePlayerId)))) {
             $endVolley = true;
             self::notifyAllPlayers('debug', 'All units fortified', array());
         }
@@ -1796,16 +1803,44 @@ class Fortify extends Table
         return false;
     }
 
+    // Function for checking 2x2 fortification
+    // Do not consider disabld units (occupied by chopper on top) for fortification. 
     private function checkFortifiedSquare($board, $x, $y, $playerId)
     {
+        self::serverLog("inside checkFortifiedSquare method", "");
         for ($i = $x; $i < $x + 2; $i++) {
             for ($j = $y; $j < $y + 2; $j++) {
-                if (!isset($board[$i][$j]) || $board[$i][$j]['player_id'] != $playerId || !$board[$i][$j]['is_fortified']) {
+                // Check if the square exists and belongs to the player
+                if (!isset($board[$i][$j]) || $board[$i][$j]['player_id'] != $playerId) {
                     return false;
+                }
+
+                $unit = $board[$i][$j];
+                self::serverLog("unit for checking win condition", $unit);
+
+                // Check if the unit is fortified
+                if (!$unit['is_fortified']) {
+                    return false;
+                }
+
+                // If the unit is occupied, it should only be considered if it's a fortified chopper
+                if ($unit['is_occupied']) {
+                    $topUnit = $this->getTopUnit($i, $j);
+                    if ($topUnit['type'] !== 'chopper' || !$topUnit['is_fortified']) {
+                        return false;
+                    }
                 }
             }
         }
         return true;
+    }
+
+    // Helper function to get the top unit in a stack
+    private function getTopUnit($x, $y)
+    {
+        // self::serverLog("inside getTopUnit method", "");
+        $sql = "SELECT * FROM units WHERE x = $x AND y = $y ORDER BY is_stacked DESC LIMIT 1";
+        return self::getObjectFromDB($sql);
     }
 
     private function checkAllUnitsFortified($playerId)
