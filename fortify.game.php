@@ -1715,14 +1715,16 @@ class Fortify extends Table
         $endVolley = false;
 
         // Check for 2x2 fortification
-        if ($this->check2x2Fortification($activePlayerId) 
-            || $this->check2x2Fortification($this->getPlayerAfter($activePlayerId))) {
+        if (
+            $this->check2x2Fortification($activePlayerId)
+            || $this->check2x2Fortification($this->getPlayerAfter($activePlayerId))
+        ) {
             $endVolley = true;
             self::notifyAllPlayers('debug', '2x2 fortification achieved', array());
         }
 
         // Check if all 12 units are fortified
-        if (!$endVolley && ($this->checkAllUnitsFortified($activePlayerId) 
+        if (!$endVolley && ($this->checkAllUnitsFortified($activePlayerId)
             || $this->checkAllUnitsFortified($this->getPlayerAfter($activePlayerId)))) {
             $endVolley = true;
             self::notifyAllPlayers('debug', 'All units fortified', array());
@@ -1910,14 +1912,30 @@ class Fortify extends Table
     {
         // 1. Swap player colors
         $players = self::loadPlayersBasicInfos();
-        $colors = array('red', 'green');
-        $i = 0;
+        // $colors = array('red', 'green');
+        // $i = 0;
+
+        // Get current colors
+        $currentColors = array();
         foreach ($players as $playerId => $player) {
-            $newColor = $colors[($i + 1) % 2];
+            $currentColors[$playerId] = $player['player_color'];
+        }
+
+        // Swap colors
+        foreach ($players as $playerId => $player) {
+            $currentColor = $currentColors[$playerId];
+            $newColor = ($currentColor == 'red') ? 'green' : 'red';
+
             $sql = "UPDATE player SET player_color='$newColor' WHERE player_id=$playerId";
             self::DbQuery($sql);
-            $i++;
         }
+
+        // foreach ($players as $playerId => $player) {
+        //     $newColor = $colors[($i + 1) % 2];
+        //     $sql = "UPDATE player SET player_color='$newColor' WHERE player_id=$playerId";
+        //     self::DbQuery($sql);
+        //     $i++;
+        // }
         self::reloadPlayersBasicInfos();
         $players = self::loadPlayersBasicInfos();
 
@@ -1948,10 +1966,25 @@ class Fortify extends Table
             ));
         }
 
-        // 8. Reset the active player to the first player
-        $newFirstPlayerId = array_keys($players)[1];
+        // 8. Reset the active player to the appropriate first player for this volley
+        $volleyCount = $this->getVolleyCount();
+        $playerIds = array_keys($players);
+
+        // Determine which player should start this volley
+        if ($volleyCount % 2 == 0) {
+            // Even-numbered volleys (including volley 2) start with the original first player
+            $newFirstPlayerId = $playerIds[0];
+        } else {
+            // Odd-numbered volleys (including volley 3) start with the original second player
+            $newFirstPlayerId = $playerIds[1];
+        }
+
+        // Set the new active player
         $this->gamestate->changeActivePlayer($newFirstPlayerId);
         self::giveExtraTime($newFirstPlayerId);
+
+        // Log the new first player for debugging
+        $this->serverLog("New first player for volley $volleyCount", $newFirstPlayerId);
 
         // 9. Prepare for the first turn of the new volley
         $this->gamestate->nextState('');
