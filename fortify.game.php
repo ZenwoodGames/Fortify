@@ -1000,14 +1000,21 @@ class Fortify extends Table
 
     private function checkChopperFormation($chopper)
     {
+        self::serverLog("Inside method checkChopperFormation", "");
+        self::serverLog("chopper", $chopper);
+
         // Check if there's a friendly fortified battleship below
         $battleshipBelow = $this->getUnitAtPosition($chopper['x'], $chopper['y'], 'battleship');
+        self::serverLog("battleshipBelow", $battleshipBelow);
+
         if (
             !$battleshipBelow || $battleshipBelow['type'] !== 'battleship' ||
             $battleshipBelow['player_id'] != $chopper['player_id'] || !$battleshipBelow['is_fortified']
         ) {
+            self::setUnitFormationAndUpdate($chopper, 0);
             throw new BgaUserException(self::_("Chopper must be above a friendly fortified Battleship to fortify"));
         }
+        self::setUnitFormationAndUpdate($chopper, 1);
         return $battleshipBelow;
     }
 
@@ -1559,6 +1566,10 @@ class Fortify extends Table
                 $tankFormation = $this->checkTankFormation($unit, $adjacentUnits);
                 self::serverLog("tank formation", $tankFormation);
                 return $tankFormation !== null;
+            case 'chopper':
+                    $chopperFormation = $this->checkChopperFormation($unit);
+                    self::serverLog("chopper formation", $chopperFormation);
+                    return $chopperFormation !== null;
             default:
                 return false; // Unknown unit type
         }
