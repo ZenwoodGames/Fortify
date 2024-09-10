@@ -1458,6 +1458,14 @@ class Fortify extends Table
             }
         }
 
+        if (
+            $attackingUnit['type'] == 'chopper'
+            && $defendingUnit['is_fortified']
+            && !$attackingUnit['is_fortified']
+        ) {
+            throw new BgaUserException(self::_("Chopper must be fortified to attack a fortified unit."));
+        }
+
         // Check if the attacking unit is in formation or fortified
         if (
             !$this->isUnitInFormation($attackingUnit)
