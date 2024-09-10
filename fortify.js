@@ -291,7 +291,7 @@ define([
                 // Select the clicked Unit
                 this.selectedUnit = event.target;
 
-                if(!this.selectedSpecialUnit)
+                if(!this.selectedSpecialUnit && !this.selectedUnit.parentNode.classList.contains('highlighted'))
                     this.removeSlotHighlight();
                 this.clearHighlights();
                 if (this.isCurrentPlayerActive()) {
