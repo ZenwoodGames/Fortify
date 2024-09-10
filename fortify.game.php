@@ -1567,12 +1567,32 @@ class Fortify extends Table
                 self::serverLog("tank formation", $tankFormation);
                 return $tankFormation !== null;
             case 'chopper':
-                    $chopperFormation = $this->checkChopperFormation($unit);
+                    $chopperFormation = $this->checkChopperInFormation($unit);
                     self::serverLog("chopper formation", $chopperFormation);
                     return $chopperFormation !== null;
             default:
                 return false; // Unknown unit type
         }
+    }
+
+    private function checkChopperInFormation($chopper)
+    {
+        self::serverLog("Inside method checkChopperFormation", "");
+        self::serverLog("chopper", $chopper);
+
+        // Check if there's a friendly fortified battleship below
+        $battleshipBelow = $this->getUnitAtPosition($chopper['x'], $chopper['y'], 'battleship');
+        self::serverLog("battleshipBelow", $battleshipBelow);
+
+        if (
+            !$battleshipBelow || $battleshipBelow['type'] !== 'battleship' ||
+            $battleshipBelow['player_id'] != $chopper['player_id'] || !$battleshipBelow['is_fortified']
+        ) {
+            self::setUnitFormationAndUpdate($chopper, 0);
+            return null;
+        }
+        self::setUnitFormationAndUpdate($chopper, 1);
+        return $battleshipBelow;
     }
 
     private function areUnitsAdjacent($unit1, $unit2)
