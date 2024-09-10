@@ -216,7 +216,8 @@ class Fortify extends Table
         $volleyCount = $this->getVolleyCount();
 
         // Get the total number of units per player
-        $totalUnits = (self::getGameStateValue('gameVariant') == 3) ? 14 : 12;
+        $totalUnits = (self::getGameStateValue('gameVariant') == 3 
+                        || self::getGameStateValue('gameVariant') == 5) ? 14 : 12;
         $player_id = self::getActivePlayerId();
 
         // Calculate the progress of the current volley
@@ -530,7 +531,9 @@ class Fortify extends Table
         ];
 
         // Perform the action:
-        if ($unitType == 'chopper' && self::getGameStateValue('gameVariant') == 3) {
+        if ($unitType == 'chopper' && (
+                self::getGameStateValue('gameVariant') == 3 
+                || self::getGameStateValue('gameVariant') == 5)) {
             // Check if the chopper is being enlisted on top of a friendly battleship
             $sql = "SELECT * FROM units WHERE x = $x AND y = $y AND type = 'battleship' AND player_id = $player_id";
             $battleship = self::getObjectFromDB($sql);
@@ -747,7 +750,9 @@ class Fortify extends Table
 
         // $this->serverLog("gameVariant", self::getGameStateValue('gameVariant'));
 
-        if ($unitType == 'chopper' && self::getGameStateValue('gameVariant') == 3) {
+        if ($unitType == 'chopper' && (
+            self::getGameStateValue('gameVariant') == 3
+            || self::getGameStateValue('gameVariant') == 5)) {
             // Choppers can move anywhere
             $sql = "UPDATE units SET x = $toX, y = $toY WHERE unit_id = '$unitId'";
             self::DbQuery($sql);
