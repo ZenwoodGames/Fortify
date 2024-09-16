@@ -915,7 +915,7 @@ define([
 
             finishEnlist: function (unitType, x, y, unitId, is_fortified) {
 
-                if (this.checkAction('enlist')) {
+                if (this.checkAction('enlist', false)) {
                     this.ajaxcall("/fortify/fortify/enlist.html", {
                         unitType: unitType,
                         x: x,
@@ -979,7 +979,7 @@ define([
             },
 
             onFortifyButtonClick: function (evt) {
-                if (!this.checkAction('fortify')) {
+                if (!this.checkAction('fortify', false)) {
                     return;
                 }
 
@@ -1029,7 +1029,7 @@ define([
             onAttackButtonClick: function (evt) {
                 // This method is only reserved for chopper attack.
                 // Foritifed chopper must be sitting on top of another enemy unit to attack
-                if (!this.checkAction('attack')) {
+                if (!this.checkAction('attack', false)) {
                     return;
                 }
                 debugger;
@@ -1443,7 +1443,7 @@ define([
             },
 
             moveUnit: function (unitId, unitType, toX, toY) {
-                if (this.checkAction('move')) {
+                if (this.checkAction('move', false)) {
                     this.ajaxcall("/fortify/fortify/move.html", {
                         unitId: unitId,
                         unitType: unitType,
@@ -1635,7 +1635,7 @@ define([
             },
 
             skipEnlist: function () {
-                if (this.checkAction('skipEnlist')) {
+                if (this.checkAction('skipEnlist', false)) {
                     this.ajaxcall("/fortify/fortify/skipEnlist.html", {
                         lock: true
                     }, this, function (result) {
