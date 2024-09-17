@@ -64,9 +64,9 @@ define([
                 this.infantryEnlistCount = 0;
 
                 // Special warfare mode is selected
-                if (this.gameVariant == 3) {
-                    dojo.style($('player_deck_top'), 'width', '600px');
-                    dojo.style($('player_deck_bottom'), 'width', '600px');
+                if (this.gameVariant == 3 || this.gameVariant == 5) {
+                    dojo.style($('player_deck_top'), 'width', '700px');
+                    dojo.style($('player_deck_bottom'), 'width', '700px');
                 }
 
                 // Initialize the game board
@@ -1548,7 +1548,7 @@ define([
                     this.addUnitsToDeck(deck, 'tank', color, 4);
                     this.addUnitsToDeck(deck, 'battleship', color, 4);
 
-                    if (this.gameVariant == 3) {  // Special Warfare variant
+                    if (this.gameVariant == 3 || this.gameVariant == 5) {  // Special Warfare variant
                         this.addUnitsToDeck(deck, 'chopper', color, 1);
                         this.addUnitsToDeck(deck, 'artillery', color, 1);
                     }
