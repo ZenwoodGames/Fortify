@@ -1150,7 +1150,7 @@ class Fortify extends Table
     {
         $sql = "SELECT * FROM units 
         WHERE player_id = " . self::escapeString($centerUnit['player_id']) . "
-        AND type = 'battl   eship'";
+        AND type = 'battleship'";
         $result = self::getObjectListFromDB($sql);
         $this->serverLog("getNearbyBattleships SQL", $sql);
         $this->serverLog("getNearbyBattleships result", $result);
