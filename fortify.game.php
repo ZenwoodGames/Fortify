@@ -1261,11 +1261,13 @@ class Fortify extends Table
             foreach ($allAdjacentUnits as $adjacentUnit) {
                 if (
                     $adjacentUnit['player_id'] == $centerUnit['player_id'] &&
-                    $adjacentUnit['is_occupied'] == 0 && $centerUnit['is_occupied'] == 0 && $partnerInfantry['unit_id'] == 0 &&
                     $adjacentUnit['is_fortified'] == '1' &&
                     $adjacentUnit['unit_id'] != $centerUnit['unit_id'] &&
                     $adjacentUnit['unit_id'] != $partnerInfantry['unit_id'] &&
-                    ($this->areUnitsAdjacent($centerUnit, $adjacentUnit) || $this->areUnitsAdjacent($partnerInfantry, $adjacentUnit))
+                    ($this->areUnitsAdjacent($centerUnit, $adjacentUnit) && 
+                        ($centerUnit['is_occupied'] == 0 && $adjacentUnit['is_occupied'] == 0)
+                    || $this->areUnitsAdjacent($partnerInfantry, $adjacentUnit) && 
+                        ($partnerInfantry['is_occupied'] == 0 && $adjacentUnit['is_occupied'] == 0))
                 ) {
                     $this->serverLog("Valid formation found (adjacent fortified unit)", $potentialFormation);
                     self::setUnitFormationAndUpdate($centerUnit, 1);
