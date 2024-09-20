@@ -1476,7 +1476,7 @@ class Fortify extends Table
         if (
             !$this->isUnitInFormation($attackingUnit)
             && !$attackingUnit['is_fortified']
-            && $attackingUnit['type'] != 'artillery'
+            && ($attackingUnit['type'] != 'artillery' && $attackingUnit['type'] != 'chopper')
         ) {
             throw new BgaUserException(self::_("The attacking unit must be in formation"));
         }
