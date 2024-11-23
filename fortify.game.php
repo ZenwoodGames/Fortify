@@ -97,6 +97,9 @@ class Fortify extends Table
         $sql = "UPDATE player SET player_score = 0";
         self::DbQuery($sql);
 
+        // Initialize volley count
+        $this -> initVolleyCount();
+
         /************ End of the game initialization *****/
     }
 
@@ -230,7 +233,12 @@ class Fortify extends Table
         $overallProgress = (($volleyCount - 1) * 100 + $currentVolleyProgress) / 3;
 
         // Ensure the progress doesn't exceed 100%
-        return min(100, max(0, $overallProgress));
+        $cappedProgress = min(100, max(0, $overallProgress));
+
+        $this->serverLog("getGameProgression overallProgress = ", $overallProgress);
+        $this->serverLog("getGameProgression cappedProgression = ", $cappedProgress);
+
+        return $cappedProgress;
     }
 
     // Helper function to get the count of fortified units for a player
@@ -1822,11 +1830,18 @@ class Fortify extends Table
         return false;
     }
 
-    // Helper methods for database operations
+    // For initialising volley count
+    private function initVolleyCount(){
+        $sql = "INSERT INTO game_progress (volley_count) VALUES (1) 
+                ON DUPLICATE KEY UPDATE volley_count = volley_count + 1";
+        self::DbQuery($sql);
+    }
+
+    // For incrementing the volley count
     private function incrementVolleyCount()
     {
-        $sql = "INSERT INTO game_progress (volley_count) VALUES (1) 
-            ON DUPLICATE KEY UPDATE volley_count = volley_count + 1";
+        $sql = "UPDATE game_progress
+                SET volley_count = volley_count + 1";
         self::DbQuery($sql);
     }
 
@@ -2109,7 +2124,7 @@ class Fortify extends Table
         you must _never_ use getCurrentPlayerId() or getCurrentPlayerName(), otherwise it will fail with a "Not logged" error message. 
     */
 
-    function zombieTurn($state, $active_player)
+    function zombieTurn(array $state, int $active_player): void
     {
         $statename = $state['name'];
 
