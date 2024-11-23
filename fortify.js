@@ -55,7 +55,11 @@ define([
                 debugger;
                 console.log("Starting game setup");
 
-                this.playerColor = gamedatas.players[this.player_id].color;
+                if (this.isSpectator) {
+                    this.player_color = 'ffffff';
+                } else {
+                    this.playerColor = gamedatas.players[this.player_id].color;
+                }
 
                 // Store the game variant
                 this.gameVariant = gamedatas.gameVariant;
@@ -140,7 +144,7 @@ define([
 
                 // Show skip enlist button
                 debugger;
-                if (gamedatas.players[this.player_id].infantryEnlistCount == 1) {
+                if (!this.isSpectator && gamedatas.players[this.player_id].infantryEnlistCount == 1) {
                     this.showButton('btnSkipEnlist');
                     this.hideButton('btnFortify');
                     this.infantryOnlyMode = true;
@@ -272,7 +276,7 @@ define([
                 var unitColor = event.target.classList.contains('red') ? 'red' : 'green';
 
                 // There are no selected units and check if the player is selecting the correct color
-                if (!this.selectedUnit) {
+                if (!this.isSpectator && !this.selectedUnit) {
                     if (currentPlayerColor !== unitColor) {
                         this.showMessage(_("You can only select tokens of your own color"), "error");
                         return;
@@ -298,14 +302,6 @@ define([
 
                     var clickedUnitId = event.currentTarget.id;
                     var clickedUnit = this.getUnitDetails(clickedUnitId);
-
-                    if (clickedUnit.player_id == this.player_id) {
-                        // Clicked on a friendly unit
-                        //this.selectUnit(clickedUnit);
-                    } else if (this.selectedUnit) {
-                        // Clicked on an enemy unit while a friendly unit is selected
-                        //this.tryAttack(this.selectedUnit.unit_id, clickedUnitId);
-                    }
 
                     // If unit is not on board, then only possible move is enlist
                     if (!this.isUnitOnBoard(this.selectedUnit)) {
