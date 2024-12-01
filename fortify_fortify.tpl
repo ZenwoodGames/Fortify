@@ -61,4 +61,5 @@
     <img id="reference-card-1" class="reference-card" src="" alt="Reference Card 1">
     <img id="reference-card-2" class="reference-card" src="" alt="Reference Card 2">
 </div>
+<div id="oversurface"></div>
 {OVERALL_GAME_FOOTER}

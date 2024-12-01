@@ -167,6 +167,7 @@
     position: relative;
     filter: drop-shadow(4px 4px 2px #222);
     margin: 0 -36px;
+    z-index: 1;
 }
 
 .selected {

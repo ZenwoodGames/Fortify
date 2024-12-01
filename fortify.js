@@ -36,6 +36,7 @@ define([
                 let unitMarginStyle = '';
                 let helpButton = null;
                 let referenceCards = null;
+                let animating = false;
             },
 
             /*
@@ -52,7 +53,7 @@ define([
             */
 
             setup: function (gamedatas) {
-                debugger;
+                
                 console.log("Starting game setup");
 
                 if (this.isSpectator) {
@@ -133,17 +134,17 @@ define([
                     innerHTML: _('Toggle Points'),
                     style: 'position: absolute; top: calc(1vh); left: calc(1vw - 122%); z-index: 1000; width: 25%; height: 22px'
                 }, $('pointTextContainer'));
-                
+
                 dojo.connect(toggleButton, 'onclick', this, 'togglePointsDisplay');
 
                 $('points_title').innerHTML = gamedatas.POINTS_TITLE;
-                
+
                 this.setupPointsDisplay(gamedatas.players);
 
                 this.setupHelpButton();
 
                 // Show skip enlist button
-                debugger;
+                
                 if (!this.isSpectator && gamedatas.players[this.player_id].infantryEnlistCount == 1) {
                     this.showButton('btnSkipEnlist');
                     this.hideButton('btnFortify');
@@ -155,13 +156,10 @@ define([
                     this.infantryOnlyMode = false;
                 }
                 dojo.connect($('btnSkipEnlist'), 'onclick', this, 'skipEnlist');
-
-                
-
                 console.log("Ending game setup");
             },
 
-            togglePointsDisplay: function() {
+            togglePointsDisplay: function () {
                 var pointsDisplay = $('points_display');
                 if (pointsDisplay.style.display == 'none') {
                     pointsDisplay.style.display = 'block';
@@ -171,6 +169,7 @@ define([
             },
 
             placeUnitOnBoard: function (unitId, unitType, x, y, playerId, is_fortified, in_formation) {
+                
                 var unitDiv = $(unitId);
                 if (!unitDiv) {
                     // If the unit doesn't exist (e.g., after a refresh), create it
@@ -180,6 +179,7 @@ define([
                 // Move the unit to the correct position on the board
                 var slot = $('board_slot_' + x + '_' + y);
                 if (slot) {
+                    debugger;
                     if (unitType == 'chopper') {
                         if (this.isSlotOccupied(slot))
                             unitDiv.style = "margin: 0 -75px";
@@ -197,9 +197,10 @@ define([
                         unitDiv.style = `margin: ${this.unitMarginStyle}`;
                     }
                     slot.appendChild(unitDiv);
+                    //this.phantomMove(unitDiv, slot, 500);
                 }
                 if (is_fortified == 1) {
-                    debugger;
+                    
                     this.updateToFortifiedUnit(unitDiv);
                     if (x == -1 && y == -1) {
                         var playerDeck;
@@ -252,7 +253,11 @@ define([
             },
 
             handleUnitClick: function (event) {
-                debugger;
+                
+                if(this.animating){
+                    return;
+                }
+
                 if (event.target.parentNode.classList.contains("reinforcement_slot")) {
                     return;
                 }
@@ -295,7 +300,7 @@ define([
                 // Select the clicked Unit
                 this.selectedUnit = event.target;
 
-                if(!this.selectedSpecialUnit && !this.selectedUnit.parentNode.classList.contains('highlighted'))
+                if (!this.selectedSpecialUnit && !this.selectedUnit.parentNode.classList.contains('highlighted'))
                     this.removeSlotHighlight();
                 this.clearHighlights();
                 if (this.isCurrentPlayerActive()) {
@@ -310,7 +315,7 @@ define([
                             this.selectedSpecialUnit = event.target;
                         }
                         else {
-                            debugger;
+                            
                             var friendlyUnits = document.querySelectorAll(`.board-slot > .unit.${this.playerColor}`);
                             if (friendlyUnits && friendlyUnits.length > 0) {
                                 // Set to store unique adjacent units
@@ -336,7 +341,7 @@ define([
                                         if (adjacentSlot) {
                                             const adjacentUnit = adjacentSlot.querySelector('.unit');
                                             if (!adjacentUnit) {
-                                                debugger;
+                                                
                                                 switch (this.selectedUnit.classList[1]) {
                                                     case 'infantry':
                                                     case 'tank':
@@ -374,7 +379,7 @@ define([
                                 //this.highlightFriendlyBattleships();
                                 this.selectedSpecialUnit = event.target;
                             }
-                            debugger;
+                            
                             if (this.selectedSpecialUnit && this.selectedSpecialUnit.parentNode.children.length > 1
                                 && !this.selectedSpecialUnit.previousElementSibling.classList.contains(this.playerColor)) {
                                 dojo.style($('btnAttack'), 'display', 'block');
@@ -405,7 +410,7 @@ define([
             },
 
             handleSlotClick: function (event) {
-                debugger;
+                
                 if (this.isCurrentPlayerActive()) {
                     let slot;
                     if (event.target.classList.contains("unit") || this.isSlotOccupied(event.target))
@@ -505,7 +510,7 @@ define([
                             if (this.getUnitDetails(this.selectedUnit).player_id == this.player_id) {
                                 this.highlightValidMoves();
                                 if (!this.selectedUnit.classList.contains('chopper')) {
-                                    debugger;
+                                    
                                     this.highlightValidTargets(this.getUnitDetails(this.selectedUnit));
                                 }
                                 else {
@@ -577,7 +582,7 @@ define([
             },
 
             initPlayerDecks: function (gamedatas) {
-                debugger;
+                
                 const playerDeckBottom = document.getElementById('player_deck_bottom');
                 const playerDeckTop = document.getElementById('player_deck_top');
 
@@ -601,17 +606,47 @@ define([
                 this.populateDeck(playerDeckTop, topDecks);
             },
 
+            phantomMove: function (sourceElement, destinationElement, transitionTime) {
+                
+                this.animating = true;
+                const sourceRect = sourceElement.getBoundingClientRect();
+                const destRect = destinationElement.getBoundingClientRect();
+                
+                var isSlot = sourceElement.parentNode.classList.contains("board-slot");
+                // Calculate the distance to move
+                const deltaX = destRect.left - sourceRect.left - 30.0 - !isSlot ?? (sourceRect.width/2);
+                const deltaY = destRect.top - sourceRect.top;
+                
+                // Set transition
+                sourceElement.style.transition = `transform ${transitionTime}ms ease`;
+                
+                // Animate
+                sourceElement.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+                setTimeout(() => {
+                        //box.style.removeProperty("opacity");
+                        if (sourceElement.parentNode) {
+                            sourceElement.parentNode.removeChild(sourceElement);
+                            destinationElement.appendChild(sourceElement);
+                            sourceElement.style.transform = '';
+                            sourceElement.style.transition = '';
+                        }
+                        this.animating = false;
+                    }, transitionTime);
+            },
+
             populateDeck: function (deckElement, decks) {
-                debugger;
+                
                 for (const type in decks) {
                     const unitDeck = deckElement.querySelector(`.${type}_deck`);
                     if (decks[type]) {
+                        var self = this;
                         decks[type].forEach(function (unit, i) {
                             const unitElement = document.createElement('div');
                             unitElement.id = `${unit.type}_${unit.player}_00${i}`
                             unitElement.className = `unit ${unit.type} ${unit.player}`;
                             unitElement.setAttribute("data-color", `${unit.player}`);
                             unitDeck.appendChild(unitElement);
+                            //self.phantomMove(unitElement, unitDeck, 500);
                         })
                     } else {
                         dojo.destroy(`${type}_deck`);
@@ -756,7 +791,7 @@ define([
 
             // Add this new function to highlight friendly battleships
             highlightFriendlyBattleships: function () {
-                debugger;
+                
                 var friendlyBattleships = dojo.query('.board-slot:not(:has(.chopper)) > .battleship.' + this.playerColor);
                 if (friendlyBattleships && friendlyBattleships.length > 0) {
                     friendlyBattleships.forEach(function (battleship) {
@@ -785,9 +820,9 @@ define([
                     var pointsDiv = dojo.create('div', {
                         id: 'player_points_' + playerId,
                         class: 'player_points',
-                        innerHTML:  '<span style="color:' + player.color + ';">' + player.name + '</span>: ' +
-                                    '<span class="points_value" id="points_value_' + playerId + '">' + player.score + '</span> ' +
-                                    this.gamedatas.POINTS_LABEL
+                        innerHTML: '<span style="color:' + player.color + ';">' + player.name + '</span>: ' +
+                            '<span class="points_value" id="points_value_' + playerId + '">' + player.score + '</span> ' +
+                            this.gamedatas.POINTS_LABEL
                     }, pointsContainer);
                 }
             },
@@ -994,7 +1029,7 @@ define([
             },
 
             exitFortifyMode: function () {
-                debugger;
+                
                 this.fortifyMode = false;
                 dojo.removeClass('btnFortify', 'active');
                 this.deselectUnitInFormation();
@@ -1028,7 +1063,7 @@ define([
                 if (!this.checkAction('attack', false)) {
                     return;
                 }
-                debugger;
+                
                 var parentSlot = this.selectedSpecialUnit.parentNode;
                 var siblings = Array.from(parentSlot.children);
                 var chopperIndex = siblings.indexOf(this.selectedSpecialUnit);
@@ -1082,7 +1117,7 @@ define([
                 var adjacentUnits = this.getAdjacentUnits(attackingUnit, true);
 
                 adjacentUnits.forEach(unit => {
-                    debugger;
+                    
                     if (unit.player_id != this.player_id && unit.type != "artillery") {
                         // Artillery units can never be attacked by any unit
                         // Check if the attacking unit is fortified or in formation
@@ -1106,7 +1141,7 @@ define([
                 let units = this.getAllUnitsOnBoard();
 
                 units.forEach(unit => {
-                    debugger;
+                    
                     let inFormation = parseInt(unit.is_in_formation)
 
                     if (inFormation && !unit.is_fortified && unit.player_id == this.player_id)
@@ -1118,7 +1153,7 @@ define([
                 let units = this.getAllUnitsOnBoard();
 
                 units.forEach(unit => {
-                    debugger;
+                    
                     let inFormation = parseInt(unit.is_in_formation)
 
                     if ($(unit.unit_id).classList.contains('formation'))
@@ -1128,7 +1163,7 @@ define([
 
             getAllUnitsOnBoard: function () {
                 // This function should return all units currently on the board
-                debugger;
+                
                 var allUnitsOnBoard = document.querySelectorAll('.board-slot > .unit');
                 return Array.from(allUnitsOnBoard).map(unit => {
                     return this.getUnitDetails(unit);
@@ -1157,11 +1192,11 @@ define([
                         //var adjacentUnit = adjacentSlot.querySelector('.unit');
 
                         if (adjUnits && adjUnits.length > 0) {
-                            debugger;
+                            
                             adjUnits.forEach(unit => {
                                 if (isEnemyUnit && unit.dataset.color == this.playerColor)
                                     return;
-    
+
                                 adjacentUnits.push({
                                     unit_id: unit,
                                     x: adjacentX,
@@ -1222,7 +1257,7 @@ define([
                     defendingUnitId: defendingUnitId,
                     lock: true
                 }, this, function (result) {
-                    debugger;
+                    
                     this.selectedSpecialUnit ? dojo.style(this.selectedSpecialUnit, 'margin', this.unitMarginStyle) : null;
 
                     this.removeUnitHighlight();
@@ -1278,7 +1313,7 @@ define([
             },
 
             updatePlayerSupply: function (unit) {
-                debugger;
+                
                 var playerDeckId = 'player_deck_' + (unit.unit_id.dataset.color == 'red' ? 'bottom' : 'top');
                 var playerDeck = $(playerDeckId);
 
@@ -1336,7 +1371,7 @@ define([
                 var y = selectedUnitDetails.y;
 
                 if (selectedUnitDetails.type === 'chopper') {
-                    debugger;
+                    
                     // For choppers, highlight all empty spaces
                     document.querySelectorAll('.board-slot:not(:has(.unit))').forEach(slot => {
                         slot.classList.add('highlighted');
@@ -1474,7 +1509,7 @@ define([
             },
 
             resetBoard: function (players) {
-                debugger;
+                
                 //this.playerColor = this.gamedatas.players[this.player_id].color;
 
                 // Store the game variant
@@ -1559,7 +1594,6 @@ define([
                 }
             },
 
-
             ///////////////////////////////////////////////////
             //// Reaction to cometD notifications
 
@@ -1591,7 +1625,7 @@ define([
             },
 
             notif_PlayerWin: function (notif) {
-                debugger;
+                
                 // Create and show a popup
                 var winner = notif.args.volleyWinner;
                 var winnerName = this.gamedatas.players[winner].name;
@@ -1612,7 +1646,7 @@ define([
             },
 
             notif_updateUnit: function (notif) {
-                debugger;
+                
                 let unit_id = notif.args.unit_id;
                 let is_in_formation = notif.args.is_in_formation;
 
@@ -1642,7 +1676,7 @@ define([
             },
 
             notif_newVolley: function (notif) {
-                debugger;
+                
                 // Reset the board
                 this.resetBoard(notif.args.players);
 
@@ -1655,7 +1689,7 @@ define([
 
             updatePlayerColor: function (playerId, color) {
                 // Update any other UI elements that depend on player color
-                debugger;
+                
                 if (playerId == this.getCurrentPlayerId())
                     this.playerColor = color;
             },
@@ -1686,12 +1720,12 @@ define([
             },
 
             notif_actionsRemaining: function (notif) {
-                debugger;
+                
                 this.updateActionCounter(notif.args.actionsRemaining);
             },
 
             notif_unitEnlisted: function (notif) {
-                debugger;
+                
                 console.log('Notification received: unitEnlisted', notif);
 
                 if (notif.args.infantryEnlistCount == 1) {
@@ -1731,7 +1765,8 @@ define([
                 // Move the unit to the correct position on the board
                 var slot = $('board_slot_' + x + '_' + y);
                 if (slot) {
-                    slot.appendChild(unitDiv);
+                    //slot.appendChild(unitDiv);
+                    this.phantomMove(unitDiv, slot, 500);
                     if (specialUnitId)
                         unitDiv.style.margin = "0 -75px";
                     else
@@ -1740,7 +1775,7 @@ define([
             },
 
             notif_unitMoved: function (notif) {
-                debugger;
+                
                 // Move the unit on the client side
                 var unit = $(notif.args.unit_Id);
                 var toSlot = $('board_slot_' + notif.args.toX + '_' + notif.args.toY);
@@ -1752,7 +1787,8 @@ define([
                     else {
                         unit.style = `margin: ${this.unitMarginStyle}`;
                     }
-                    toSlot.appendChild(unit);
+                    //toSlot.appendChild(unit);
+                    this.phantomMove(unit, toSlot, 500);
                 }
 
                 this.resetGameState();
@@ -1769,7 +1805,7 @@ define([
 
             notif_unitAttacked: function (notif) {
                 // Update the reinforcement track
-                debugger;
+                
                 if (notif.args.attacking_unit_type == 'chopper') {
                     dojo.style($(notif.args.attacking_unit_id), 'margin', this.unitMarginStyle);
                 }
@@ -1785,7 +1821,7 @@ define([
             },
 
             notif_reinforcementTrackUpdated: function (notif) {
-                debugger;
+                
                 console.log('Notification: Reinforcement track updated', notif);
 
                 // Update the reinforcement track with the new state
@@ -1798,7 +1834,8 @@ define([
                         var unitDiv = $(unit.unit_id);
                         if (unitDiv) {
                             // If the unit div exists, move it to the reinforcement track slot
-                            dojo.place(unitDiv, slot);
+                            //dojo.place(unitDiv, slot);
+                            this.phantomMove(unitDiv, slot, 500);
                             dojo.addClass(unitDiv, 'reinforcement');
 
                             // Update fortified status if needed
@@ -1813,14 +1850,15 @@ define([
                             if (unit.is_fortified == '1') {
                                 dojo.addClass(unitDiv, 'fortified');
                             }
-                            dojo.place(unitDiv, slot);
+                            //dojo.place(unitDiv, slot);
+                            this.phantomMove(unitDiv, slot, 500);
                         }
                     }
                 }
             },
 
             notif_unitReturnedToSupply: function (notif) {
-                debugger;
+                
                 this.showMessage(_("A ${unit_type} has returned to ${player_name}'s supply")
                     .replace('${unit_type}', notif.args.unit_type)
                     .replace('${player_name}', notif.args.player_name));
@@ -1838,7 +1876,7 @@ define([
             },
 
             notif_pointsUpdated: function (notif) {
-                debugger;
+                
                 this.updatePointsDisplay(notif.args.playerId, notif.args.points);
             }
         });
